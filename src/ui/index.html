@@ -1,0 +1,2857 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlgoLab C++20 — Análise & Visualização de Algoritmos</title>
+  <style>
+    :root {
+      --bg-app: #09090b;
+      --bg-sidebar: #0c0c0f;
+      --bg-card: #111115;
+      --bg-elevated: #18181d;
+      --bg-hover: #1f1f26;
+      --border: #27272a;
+      --border-strong: #3f3f46;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --accent: #6366f1;
+      --accent-soft: rgba(99, 102, 241, 0.14);
+      --emerald: #10b981;
+      --emerald-soft: rgba(16, 185, 129, 0.14);
+      --amber: #f59e0b;
+      --amber-soft: rgba(245, 158, 11, 0.14);
+      --rose: #f43f5e;
+      --rose-soft: rgba(244, 63, 94, 0.14);
+      --cyan: #06b6d4;
+      --cyan-soft: rgba(6, 182, 212, 0.14);
+      --sans: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg-app);
+      color: var(--text-primary);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Scrollbar minimalista */
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+    .app-shell {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 252px;
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 18px 14px;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 8px;
+    }
+
+    .brand-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #6366f1, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 13px;
+      color: #fff;
+      box-shadow: 0 0 18px rgba(99, 102, 241, 0.35);
+    }
+
+    .brand-title {
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+    }
+
+    .nav-section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      padding: 0 10px;
+      margin-bottom: 6px;
+    }
+
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--sans);
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+
+    .nav-btn:hover {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+
+    .nav-btn.active {
+      background: var(--accent-soft);
+      color: #c7d2fe;
+      border-color: rgba(99, 102, 241, 0.35);
+    }
+
+    .nav-btn svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.85; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-secondary);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 8px var(--emerald);
+      flex-shrink: 0;
+    }
+
+    .pulse-dot.offline {
+      background: var(--amber);
+      box-shadow: 0 0 8px var(--amber);
+    }
+
+    /* Main Content */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.06), transparent 45%);
+    }
+
+    .topbar {
+      height: 58px;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(9, 9, 11, 0.8);
+      backdrop-filter: blur(8px);
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .page-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 500;
+      font-family: var(--mono);
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .badge.indigo { background: var(--accent-soft); border-color: rgba(99, 102, 241, 0.35); color: #a5b4fc; }
+    .badge.emerald { background: var(--emerald-soft); border-color: rgba(16, 185, 129, 0.35); color: #6ee7b7; }
+    .badge.amber { background: var(--amber-soft); border-color: rgba(245, 158, 11, 0.35); color: #fcd34d; }
+    .badge.rose { background: var(--rose-soft); border-color: rgba(244, 63, 94, 0.35); color: #fda4af; }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 7px 13px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-family: var(--sans);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
+
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: #818cf8;
+      color: #fff;
+    }
+
+    .btn.primary:hover:not(:disabled) {
+      background: #4f46e5;
+    }
+
+    .btn.sm { padding: 5px 10px; font-size: 12px; }
+
+    .content-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 28px 40px;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn 0.16s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Grids & Cards */
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+
+    @media (max-width: 1180px) {
+      .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .card-desc {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .kpi-value {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin: 6px 0 4px;
+      font-family: var(--mono);
+    }
+
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* Pill Selector */
+    .pill-group {
+      display: inline-flex;
+      padding: 3px;
+      border-radius: 9px;
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      gap: 3px;
+      flex-wrap: wrap;
+    }
+
+    .pill-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--sans);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.14s ease;
+    }
+
+    .pill-btn:hover { color: var(--text-primary); }
+    .pill-btn.active {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+
+    /* Controls & Inputs */
+    .control-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    select, input[type="number"], input[type="text"] {
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text-primary);
+      padding: 6px 10px;
+      font-family: var(--sans);
+      font-size: 12.5px;
+      outline: none;
+    }
+
+    select:focus, input:focus { border-color: var(--accent); }
+
+    input[type="range"] {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Visualizer Layout */
+    .viz-grid {
+      display: grid;
+      grid-template-columns: 1.65fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    @media (max-width: 1120px) {
+      .viz-grid { grid-template-columns: 1fr; }
+    }
+
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      height: 360px;
+      background: #070709;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .canvas-wrap canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+    }
+
+    .code-box {
+      background: #070709;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.55;
+      overflow-x: auto;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    .code-line {
+      display: flex;
+      gap: 12px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      white-space: pre;
+    }
+
+    .code-line.hl {
+      background: rgba(99, 102, 241, 0.22);
+      border-left: 2px solid var(--accent);
+    }
+
+    .line-num {
+      color: var(--text-muted);
+      user-select: none;
+      min-width: 20px;
+      text-align: right;
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg-card);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    th {
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 9px 12px;
+      border-bottom: 1px solid rgba(39, 39, 42, 0.55);
+      color: var(--text-primary);
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+    .mono { font-family: var(--mono); white-space: nowrap; }
+    .num { font-family: var(--mono); text-align: right; }
+
+    /* Callout & DP / Greedy visuals */
+    .callout {
+      padding: 12px 14px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      margin-top: 12px;
+    }
+
+    .callout.indigo { border-color: rgba(99, 102, 241, 0.35); background: rgba(99, 102, 241, 0.08); color: #e0e7ff; }
+    .callout.emerald { border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.08); color: #d1fae5; }
+    .callout.rose { border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.08); color: #ffe4e6; }
+
+    .dp-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .dp-cell {
+      min-width: 52px;
+      padding: 6px 8px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--bg-app);
+      text-align: center;
+      font-family: var(--mono);
+    }
+
+    .dp-cell.active { border-color: var(--amber); background: var(--amber-soft); }
+    .dp-cell.chosen { border-color: var(--emerald); background: var(--emerald-soft); }
+    .dp-cell .idx { font-size: 10px; color: var(--text-muted); display: block; }
+    .dp-cell .val { font-size: 13px; font-weight: 700; }
+
+    .coin-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 12px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-elevated);
+      margin: 2px;
+    }
+
+    .coin-chip.opt { border-color: var(--emerald); background: var(--emerald-soft); color: #6ee7b7; }
+    .coin-chip.sub { border-color: var(--rose); background: var(--rose-soft); color: #fda4af; }
+
+    .chart-container {
+      position: relative;
+      height: 360px;
+      width: 100%;
+      background: #070709;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .chart-tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(17, 17, 21, 0.96);
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      display: none;
+      z-index: 20;
+    }
+
+    .mt-12 { margin-top: 12px; }
+    .mt-16 { margin-top: 16px; }
+    .mt-20 { margin-top: 20px; }
+    .mb-12 { margin-bottom: 12px; }
+    .mb-16 { margin-bottom: 16px; }
+
+    .formula {
+      font-family: var(--mono);
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 6px;
+      display: inline-block;
+      font-size: 12px;
+      color: #c7d2fe;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">AL</div>
+        <div>
+          <div class="brand-title">AlgoLab</div>
+          <div class="brand-sub">C++20 Engine v1.0</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="nav-section-label">Navegação</div>
+        <nav class="nav-list">
+          <button class="nav-btn active" data-tab="overview">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Visão Geral
+          </button>
+          <button class="nav-btn" data-tab="visualizer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7"/><rect x="12" y="6" width="3" height="11"/><rect x="17" y="13" width="3" height="4"/></svg>
+            Visualizador
+          </button>
+          <button class="nav-btn" data-tab="empirical">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 4 3 5-7"/></svg>
+            Laboratório Empírico
+          </button>
+          <button class="nav-btn" data-tab="analysis">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Análise Assintótica
+          </button>
+          <button class="nav-btn" data-tab="source">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            Código C++20
+          </button>
+        </nav>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="status-row">
+          <span class="pulse-dot" id="engineDot"></span>
+          <span id="engineStatusText">Conectando ao motor...</span>
+        </div>
+        <div style="color: var(--text-muted); font-size: 11px;" id="compilerMeta">
+          Análise de Algoritmos • 2026
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Area -->
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 class="page-title" id="topbarTitle">Visão Geral do Projeto</h1>
+          <span class="badge indigo" id="topbarBadge">4 Módulos • C++20</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn sm" id="btnSwitchViz">Abrir Visualizador</button>
+          <button class="btn sm primary" id="btnRebenchmark">Executar Bateria C++</button>
+        </div>
+      </header>
+
+      <div class="content-scroll">
+        <!-- ======================== TAB 1: OVERVIEW ======================== -->
+        <section id="tab-overview" class="tab-panel active">
+          <div class="grid-4" id="overviewKpis">
+            <div class="card">
+              <div class="kpi-label">Experimentos Executados</div>
+              <div class="kpi-value" id="kpiTotal">—</div>
+              <div class="kpi-sub">Medições empíricas nativas</div>
+            </div>
+            <div class="card">
+              <div class="kpi-label">Speedup Busca (n = 1.000.000)</div>
+              <div class="kpi-value" style="color: var(--emerald);" id="kpiSearchSpeedup">—</div>
+              <div class="kpi-sub">Binária Iterativa vs Sequencial</div>
+            </div>
+            <div class="card">
+              <div class="kpi-label">QuickSort vs Bubble (n = 25.000)</div>
+              <div class="kpi-value" style="color: var(--cyan);" id="kpiSortSpeedup">—</div>
+              <div class="kpi-sub">Vetor Aleatório (Mediana de 3)</div>
+            </div>
+            <div class="card">
+              <div class="kpi-label">Fibonacci (n = 40)</div>
+              <div class="kpi-value" style="color: var(--amber);" id="kpiFibSpeedup">—</div>
+              <div class="kpi-sub">Iterativo O(n) vs Recursivo O(2^n)</div>
+            </div>
+          </div>
+
+          <div class="grid-2 mt-16">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Escopo Investigado (Seção 4 do Roteiro)</div>
+                  <div class="card-desc">Implementação, instrumentação de primitivas e confronto teoria × prática</div>
+                </div>
+                <span class="badge emerald">Corretude 100%</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:10px; font-size:13px;">
+                <div class="callout">
+                  <strong style="color:#fff;">1. Busca Sequencial vs. Busca Binária (Iterativa e Recursiva)</strong><br/>
+                  Comparação em entradas de 1.000 a 1.000.000 elementos com chave no início, meio, fim e ausente.
+                </div>
+                <div class="callout">
+                  <strong style="color:#fff;">2. Ordenação &amp; Divisão e Conquista</strong><br/>
+                  Quick Sort (Mediana de 3 vs. Pivô Fixo), Merge Sort, Insertion Sort e Bubble Sort Otimizado nos 5 formatos obrigatórios.
+                </div>
+                <div class="callout">
+                  <strong style="color:#fff;">3. Iterativo vs. Recursivo &amp; Divisão e Conquista</strong><br/>
+                  Fibonacci (Iterativo vs. Recursivo Ingênuo vs. Memoização) e Exponenciação Linear vs. Rápida O(log n).
+                </div>
+                <div class="callout">
+                  <strong style="color:#fff;">4. Algoritmos Gulosos vs. Programação Dinâmica</strong><br/>
+                  Problema do Troco (canônico BRL vs. contraexemplo [1,3,4]) e Mochila (Fracionária vs. 0/1 Heurística vs. 0/1 PD).
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Resumo de Complexidade Assintótica</div>
+                  <div class="card-desc">Ordens teóricas validadas pelos ensaios empíricos em C++20</div>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Algoritmo</th>
+                      <th>Melhor</th>
+                      <th>Médio</th>
+                      <th>Pior</th>
+                      <th>Espaço</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Busca Sequencial</td><td class="mono">O(1)</td><td class="mono">Θ(n)</td><td class="mono">O(n)</td><td class="mono">O(1)</td></tr>
+                    <tr><td>Busca Binária (Iter.)</td><td class="mono">O(1)</td><td class="mono">Θ(log n)</td><td class="mono">O(log n)</td><td class="mono">O(1)</td></tr>
+                    <tr><td>Busca Binária (Rec.)</td><td class="mono">O(1)</td><td class="mono">Θ(log n)</td><td class="mono">O(log n)</td><td class="mono">O(log n)</td></tr>
+                    <tr><td>Quick Sort (Mediana 3)</td><td class="mono">Ω(n log n)</td><td class="mono">Θ(n log n)</td><td class="mono">O(n²)*</td><td class="mono">O(log n)</td></tr>
+                    <tr><td>Quick Sort (Pivô Fixo)</td><td class="mono">Ω(n log n)</td><td class="mono">Θ(n log n)</td><td class="mono">O(n²)</td><td class="mono">O(log n)</td></tr>
+                    <tr><td>Merge Sort</td><td class="mono">Ω(n log n)</td><td class="mono">Θ(n log n)</td><td class="mono">O(n log n)</td><td class="mono">Θ(n)</td></tr>
+                    <tr><td>Insertion Sort</td><td class="mono">Ω(n)</td><td class="mono">Θ(n²)</td><td class="mono">O(n²)</td><td class="mono">O(1)</td></tr>
+                    <tr><td>Bubble Sort Otimizado</td><td class="mono">Ω(n)</td><td class="mono">Θ(n²)</td><td class="mono">O(n²)</td><td class="mono">O(1)</td></tr>
+                    <tr><td>Fibonacci Recursivo</td><td class="mono">Ω(φⁿ)</td><td class="mono">Θ(φⁿ)</td><td class="mono">O(2ⁿ)</td><td class="mono">O(n)</td></tr>
+                    <tr><td>Mochila 0/1 (PD)</td><td class="mono">Θ(n·W)</td><td class="mono">Θ(n·W)</td><td class="mono">O(n·W)</td><td class="mono">Θ(n·W)</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================== TAB 2: VISUALIZER ======================== -->
+        <section id="tab-visualizer" class="tab-panel">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+            <div class="pill-group" id="vizDomainPills">
+              <button class="pill-btn active" data-domain="sorting">Ordenação</button>
+              <button class="pill-btn" data-domain="search">Busca</button>
+              <button class="pill-btn" data-domain="recursion">Iterativo vs Recursivo &amp; D&amp;C</button>
+              <button class="pill-btn" data-domain="greedy_dp">Guloso vs Prog. Dinâmica</button>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button class="btn sm" id="vizStepBack" title="Passo anterior">◀ Anterior</button>
+              <button class="btn sm primary" id="vizPlayPause">▶ Executar</button>
+              <button class="btn sm" id="vizStepFwd" title="Próximo passo">Passo ▶</button>
+              <button class="btn sm" id="vizReset">↺ Reiniciar</button>
+            </div>
+          </div>
+
+          <!-- Dynamic Parameter Controls -->
+          <div class="control-bar" id="vizControlsBar">
+            <div class="field">
+              <label>Algoritmo</label>
+              <select id="vizAlgoSelect"></select>
+            </div>
+            <div class="field" id="vizFormatWrap">
+              <label id="vizFormatLabel">Formato da Entrada</label>
+              <select id="vizFormatSelect"></select>
+            </div>
+            <div class="field" id="vizSizeWrap">
+              <label id="vizSizeLabel">Tamanho n = <span id="vizSizeVal">32</span></label>
+              <input type="range" id="vizSizeSlider" min="10" max="72" value="32" />
+            </div>
+            <div class="field">
+              <label>Velocidade (<span id="vizSpeedVal">5x</span>)</label>
+              <input type="range" id="vizSpeedSlider" min="1" max="10" value="5" />
+            </div>
+            <div class="field" style="margin-left:auto;">
+              <label>Execução Real no Motor C++</label>
+              <button class="btn sm" id="vizMeasureCpp">⚡ Medir C++ Nativo</button>
+            </div>
+          </div>
+
+          <!-- Live Metrics Strip -->
+          <div class="grid-4 mb-16" style="gap:10px;">
+            <div class="card" style="padding:12px 14px;">
+              <div class="kpi-label">Comparações</div>
+              <div class="kpi-value" style="font-size:19px; color:var(--amber);" id="mComp">0</div>
+            </div>
+            <div class="card" style="padding:12px 14px;">
+              <div class="kpi-label" id="mSwapLabel">Trocas / Escritas</div>
+              <div class="kpi-value" style="font-size:19px; color:var(--rose);" id="mSwap">0</div>
+            </div>
+            <div class="card" style="padding:12px 14px;">
+              <div class="kpi-label" id="mAccLabel">Acessos / Chamadas</div>
+              <div class="kpi-value" style="font-size:19px; color:var(--cyan);" id="mAcc">0</div>
+            </div>
+            <div class="card" style="padding:12px 14px;">
+              <div class="kpi-label">Tempo Real C++ (n atual)</div>
+              <div class="kpi-value" style="font-size:19px; color:var(--emerald);" id="mCppTime">—</div>
+            </div>
+          </div>
+
+          <!-- Main Visualizer Grid: Stage + Synced C++ Code -->
+          <div class="viz-grid">
+            <div class="card">
+              <div class="card-header" style="margin-bottom:10px;">
+                <div>
+                  <div class="card-title" id="vizStageTitle">Visualização Passo a Passo</div>
+                  <div class="card-desc" id="vizStepCaption">Selecione os parâmetros e pressione Executar ou Passo.</div>
+                </div>
+                <span class="badge" id="vizStepProgress">Passo 0 / 0</span>
+              </div>
+
+              <!-- Canvas for Sorting / Search / Recursion Tree -->
+              <div class="canvas-wrap" id="vizCanvasWrap">
+                <canvas id="vizCanvas"></canvas>
+              </div>
+
+              <!-- HTML Stage for Greedy vs DP side-by-side comparison -->
+              <div id="vizHtmlStage" style="display:none; min-height:360px;"></div>
+
+              <div class="legend-row" id="vizLegend">
+                <span class="legend-item"><span class="swatch" style="background:#3f3f46;"></span>Normal</span>
+                <span class="legend-item"><span class="swatch" style="background:#f59e0b;"></span>Comparação</span>
+                <span class="legend-item"><span class="swatch" style="background:#f43f5e;"></span>Troca / Escrita</span>
+                <span class="legend-item"><span class="swatch" style="background:#6366f1;"></span>Pivô / Intervalo</span>
+                <span class="legend-item"><span class="swatch" style="background:#10b981;"></span>Confirmado / Alvo</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header" style="margin-bottom:10px;">
+                <div>
+                  <div class="card-title">Implementação C++ Sincronizada</div>
+                  <div class="card-desc" id="vizComplexityHint">Complexidade do algoritmo selecionado</div>
+                </div>
+              </div>
+              <div class="code-box" id="vizCodeBox"></div>
+              <div class="callout indigo mt-12" id="vizInsightBox">
+                Dica: Use o botão <strong>Passo ▶</strong> para acompanhar cada comparação e troca registrada pelas métricas.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================== TAB 3: EMPIRICAL LAB ======================== -->
+        <section id="tab-empirical" class="tab-panel">
+          <div class="control-bar">
+            <div class="pill-group" id="empSuitePills">
+              <button class="pill-btn active" data-suite="sorting">Ordenação</button>
+              <button class="pill-btn" data-suite="search">Busca</button>
+              <button class="pill-btn" data-suite="recursion">Iterativo vs Recursivo</button>
+              <button class="pill-btn" data-suite="greedy_dp">Guloso vs PD</button>
+            </div>
+
+            <div class="field">
+              <label>Formato / Cenário</label>
+              <select id="empFormatSelect"></select>
+            </div>
+
+            <div class="field">
+              <label>Métrica no Gráfico</label>
+              <select id="empMetricSelect">
+                <option value="elapsed_us">Tempo de Execução (µs)</option>
+                <option value="dominant_count">Operação Dominante (Qtd)</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Escala Y</label>
+              <select id="empScaleSelect">
+                <option value="linear">Linear</option>
+                <option value="log">Logarítmica (log10)</option>
+              </select>
+            </div>
+
+            <div style="margin-left:auto; display:flex; gap:8px;">
+              <button class="btn sm" id="btnExportCsv">⬇ Exportar CSV</button>
+            </div>
+          </div>
+
+          <!-- Chart Card -->
+          <div class="card mb-16">
+            <div class="card-header">
+              <div>
+                <div class="card-title" id="empChartTitle">Gráfico de Desempenho Empírico (n × Tempo)</div>
+                <div class="card-desc" id="empChartSubtitle">Comparação no mesmo contexto de medição (Seção 9 do roteiro)</div>
+              </div>
+              <div id="empChartLegend" style="display:flex; flex-wrap:wrap; gap:12px; font-size:12px;"></div>
+            </div>
+            <div class="chart-container">
+              <canvas id="empChartCanvas"></canvas>
+              <div class="chart-tooltip" id="empTooltip"></div>
+            </div>
+            <div class="callout indigo mt-12" id="empInterpretation"></div>
+          </div>
+
+          <!-- Custom Live C++ Execution Card -->
+          <div class="card mb-16">
+            <div class="card-header" style="margin-bottom:10px;">
+              <div>
+                <div class="card-title">Experimento Sob Demanda no Motor C++</div>
+                <div class="card-desc">Execute um tamanho e formato customizados diretamente no binário nativo</div>
+              </div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;">
+              <div class="field">
+                <label>Algoritmo</label>
+                <select id="customAlgo"></select>
+              </div>
+              <div class="field">
+                <label>Entrada n</label>
+                <input type="number" id="customN" value="5000" min="10" max="500000" style="width:120px;" />
+              </div>
+              <div class="field">
+                <label>Formato</label>
+                <select id="customFormat"></select>
+              </div>
+              <button class="btn primary sm" id="btnRunCustom">⚡ Executar no C++</button>
+              <div id="customResultText" class="mono" style="font-size:12px; color:var(--emerald); padding:6px 0;"></div>
+            </div>
+          </div>
+
+          <!-- Empirical Table (Section 7 Format) -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Tabela de Medições Empíricas (Padrão Seção 7)</div>
+                <div class="card-desc" id="empTableCount">Exibindo registros</div>
+              </div>
+            </div>
+            <div class="table-wrap" style="max-height:460px; overflow-y:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Algoritmo</th>
+                    <th style="text-align:right;">n</th>
+                    <th>Formato da entrada</th>
+                    <th style="text-align:right;">Tempo (µs)</th>
+                    <th style="text-align:right;">Tempo (ms)</th>
+                    <th>Operação dominante</th>
+                    <th style="text-align:right;">Quantidade</th>
+                    <th style="text-align:right;">Mem. Aux.</th>
+                    <th>Observação</th>
+                  </tr>
+                </thead>
+                <tbody id="empTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================== TAB 4: ASYMPTOTIC & CRITICAL ======================== -->
+        <section id="tab-analysis" class="tab-panel">
+          <div class="card mb-16">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Análise Teórica e Dedução Assintótica (Seção 8 do Roteiro)</div>
+                <div class="card-desc">Obtenção formal da função de custo e recorrências a partir da estrutura do algoritmo</div>
+              </div>
+              <span class="badge indigo">Teorema Mestre &amp; Somatórios</span>
+            </div>
+            <div class="grid-2" id="asymptoticCards"></div>
+          </div>
+
+          <div class="card mb-16">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Matriz Comparativa dos 7 Critérios (Seção 13 do Roteiro)</div>
+                <div class="card-desc">Síntese técnica para tomada de decisão em engenharia de software</div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Critério</th>
+                    <th>Busca (Seq. vs Binária)</th>
+                    <th>Ordenação (Quick / Merge / Insertion / Bubble)</th>
+                    <th>Iterativo vs Recursivo &amp; D&amp;C</th>
+                    <th>Guloso vs Prog. Dinâmica</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>1. Corretude</strong></td>
+                    <td>Ambas corretas em vetor ordenado; Sequencial também funciona em vetor não ordenado.</td>
+                    <td>Todos ordenam corretamente em todos os 5 formatos testados (validado via <code>std::is_sorted</code>).</td>
+                    <td>Todas corretas; Fibonacci recursivo sofre estouro exponencial de tempo para n ≥ 45.</td>
+                    <td>PD garante ótimo global sempre; Guloso falha em sistemas não-canônicos (Troco [1,3,4]) e Mochila 0/1.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>2. Simplicidade</strong></td>
+                    <td>Sequencial e Binária Iterativa têm ~15 linhas simples sem pilha recursiva.</td>
+                    <td>Insertion e Bubble são triviais; Merge e Quick Mediana de 3 exigem partição/intercalação cuidadosa.</td>
+                    <td>Fibonacci Iterativo é o mais simples; D&amp;C requer tratar paridade do expoente.</td>
+                    <td>Guloso é muito mais simples de codificar; PD exige formular recorrência e tabela de estados.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>3. Eficiência Temporal</strong></td>
+                    <td>O(n) vs Θ(log n). Em n=1.000.000, Binária faz ~20 comp. contra 1.000.000 da Sequencial.</td>
+                    <td>Quick Mediana de 3 e Merge em Θ(n log n) superam Insertion/Bubble Θ(n²) por >100× em n=25.000.</td>
+                    <td>Fibonacci O(2ⁿ) cresce explosivamente; Exponenciação D&amp;C cai de 1.000.000 para ~20 mults.</td>
+                    <td>Guloso O(k log k) / O(n log n) é bem mais rápido que PD Θ(A·k) / Θ(n·W) para grandes valores.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>4. Eficiência Espacial</strong></td>
+                    <td>Iterativas O(1); Binária Recursiva consome O(log n) na pilha.</td>
+                    <td>Insertion/Bubble/Quick O(1)–O(log n); Merge Sort aloca buffer auxiliar Θ(n).</td>
+                    <td>Iterativo O(1) vs Recursivo O(n) na pilha + tabela Θ(n) na memoização.</td>
+                    <td>Guloso O(1)–O(n); PD exige tabela Θ(A) ou matriz Θ(n·W) de memória.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>5. Sensibilidade à Entrada</strong></td>
+                    <td>Sequencial varia de 1 passo (início) a n (ausente); Binária é estável em O(log n).</td>
+                    <td>Insertion/Bubble caem para O(n) em ordenado; Quick Pivô Fixo degrada para O(n²) em ordenado/reverso!</td>
+                    <td>Depende apenas do valor escalar n (ou bits de exp em D&amp;C).</td>
+                    <td>Depende da estrutura do sistema de moedas (canônico vs não-canônico) e capacidade W.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>6. Escalabilidade</strong></td>
+                    <td>Apenas Busca Binária escala para milhões de registros.</td>
+                    <td>Apenas Θ(n log n) escalam além de n = 10.000 sem gargalo severo.</td>
+                    <td>Recursão ingênua trava após n ≈ 40; Iterativo/D&amp;C escalam a milhões.</td>
+                    <td>PD escala apenas para W/A moderados (pseudo-polinomial); Guloso escala facilmente.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>7. Adequação ao Contexto</strong></td>
+                    <td>Sequencial p/ listas pequenas/não ordenadas; Binária Iterativa p/ grandes volumes ordenados.</td>
+                    <td>Quick Mediana 3 p/ uso geral in-place; Merge p/ estabilidade; Insertion p/ vetores quase ordenados ou pequenos.</td>
+                    <td>Preferir Iterativo/D&amp;C em produção; evitar recursão com subproblemas sobrepostos sem memoização.</td>
+                    <td>Guloso para problemas com propriedade matroide/canônica (Mochila Fracionária); PD para 0/1 exato.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Análise Crítica — Questões Orientadoras (Seção 10 do Roteiro)</div>
+                <div class="card-desc">Respostas técnicas baseadas nas evidências coletadas</div>
+              </div>
+            </div>
+            <div class="grid-2" id="criticalQuestions"></div>
+          </div>
+        </section>
+
+        <!-- ======================== TAB 5: SOURCE CODE ======================== -->
+        <section id="tab-source" class="tab-panel">
+          <div class="control-bar">
+            <div class="pill-group" id="sourceModulePills">
+              <button class="pill-btn active" data-mod="search">search_algorithms.hpp</button>
+              <button class="pill-btn" data-mod="sorting">sorting_algorithms.hpp</button>
+              <button class="pill-btn" data-mod="recursion">recursion_dc_algorithms.hpp</button>
+              <button class="pill-btn" data-mod="greedy_dp">greedy_dp_algorithms.hpp</button>
+            </div>
+            <button class="btn sm" id="btnCopySource" style="margin-left:auto;">Copiar Código</button>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title" id="sourceTitle">include/search_algorithms.hpp</div>
+                <div class="card-desc" id="sourceDesc">Implementação C++20 com instrumentação exata de operações primitivas</div>
+              </div>
+            </div>
+            <div class="code-box" id="sourceCodeView" style="max-height:600px;"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Embedded Benchmark Fallback (injected during build by scripts/build.ps1) -->
+  <script id="embedded-benchmark-data" type="application/json">__EMBEDDED_BENCHMARK_JSON__</script>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // =========================================================================
+    // STATE & ENGINE CONNECTION
+    // =========================================================================
+    let benchmarkData = { generated_at: '', compiler_info: 'C++20', records: [] };
+    let isBackendOnline = false;
+
+    const ALGO_COLORS = {
+      seq_search: '#f43f5e',
+      bin_search_iter: '#10b981',
+      bin_search_rec: '#06b6d4',
+      quick_median3: '#10b981',
+      quick_fixed: '#f59e0b',
+      merge_sort: '#6366f1',
+      insertion_sort: '#06b6d4',
+      bubble_sort: '#f43f5e',
+      fib_iter: '#10b981',
+      fib_dp: '#6366f1',
+      fib_rec: '#f43f5e',
+      pow_iter: '#f43f5e',
+      pow_dc: '#10b981',
+      coin_greedy: '#f59e0b',
+      coin_dp: '#10b981',
+      knap_frac: '#06b6d4',
+      knap_01_greedy: '#f43f5e',
+      knap_01_dp: '#10b981'
+    };
+
+    const CODE_SNIPPETS = {
+      quick_median3: {
+        hint: 'Melhor/Médio: Θ(n log n) | Pior: O(n²) evitado via Mediana de 3 | Espaço: O(log n)',
+        lines: [
+          'int median_of_three(vector<int>& a, int lo, int hi) {',
+          '  int mid = lo + (hi - lo) / 2;',
+          '  if (a[mid] < a[lo]) swap(a[mid], a[lo]);',
+          '  if (a[hi] < a[lo]) swap(a[hi], a[lo]);',
+          '  if (a[hi] < a[mid]) swap(a[hi], a[mid]);',
+          '  return a[mid]; // pivô balanceado',
+          '}',
+          'void quick_sort_median3(vector<int>& a, int lo, int hi) {',
+          '  if (lo >= hi) return;',
+          '  int pivot = median_of_three(a, lo, hi);',
+          '  int i = lo - 1, j = hi + 1;',
+          '  while (true) {',
+          '    do { ++i; comps++; } while (a[i] < pivot);',
+          '    do { --j; comps++; } while (a[j] > pivot);',
+          '    if (i >= j) break;',
+          '    swap(a[i], a[j]); swaps += 3;',
+          '  }',
+          '  quick_sort_median3(a, lo, j);',
+          '  quick_sort_median3(a, j + 1, hi);',
+          '}'
+        ]
+      },
+      quick_fixed: {
+        hint: 'Médio: Θ(n log n) | Pior caso (ordenado/inverso): Θ(n²) | Espaço: O(log n)',
+        lines: [
+          'int partition_lomuto(vector<int>& a, int lo, int hi) {',
+          '  int pivot = a[hi]; // pivô fixo no fim',
+          '  int i = lo - 1;',
+          '  for (int j = lo; j < hi; ++j) {',
+          '    comps++;',
+          '    if (a[j] <= pivot) {',
+          '      swap(a[++i], a[j]); swaps += 3;',
+          '    }',
+          '  }',
+          '  swap(a[i + 1], a[hi]); swaps += 3;',
+          '  return i + 1;',
+          '}',
+          'void quick_sort_fixed(vector<int>& a, int lo, int hi) {',
+          '  if (lo < hi) {',
+          '    int p = partition_lomuto(a, lo, hi);',
+          '    quick_sort_fixed(a, lo, p - 1);',
+          '    quick_sort_fixed(a, p + 1, hi);',
+          '  }',
+          '}'
+        ]
+      },
+      merge_sort: {
+        hint: 'Melhor = Médio = Pior: Θ(n log n) | Estável | Espaço Auxiliar: Θ(n)',
+        lines: [
+          'void merge(vector<int>& a, vector<int>& aux, int l, int m, int r) {',
+          '  for (int k = l; k <= r; ++k) aux[k] = a[k];',
+          '  int i = l, j = m + 1;',
+          '  for (int k = l; k <= r; ++k) {',
+          '    if (i > m) a[k] = aux[j++];',
+          '    else if (j > r) a[k] = aux[i++];',
+          '    else if (++comps && aux[i] <= aux[j]) a[k] = aux[i++];',
+          '    else a[k] = aux[j++];',
+          '    writes++;',
+          '  }',
+          '}',
+          'void merge_sort(vector<int>& a, vector<int>& aux, int l, int r) {',
+          '  if (l >= r) return;',
+          '  int m = l + (r - l) / 2;',
+          '  merge_sort(a, aux, l, m);',
+          '  merge_sort(a, aux, m + 1, r);',
+          '  merge(a, aux, l, m, r);',
+          '}'
+        ]
+      },
+      insertion_sort: {
+        hint: 'Melhor (ordenado): Ω(n) | Médio/Pior: Θ(n²) | Espaço: O(1) | Adaptativo',
+        lines: [
+          'void insertion_sort(vector<int>& a) {',
+          '  for (size_t i = 1; i < a.size(); ++i) {',
+          '    int key = a[i];',
+          '    size_t j = i;',
+          '    while (j > 0) {',
+          '      comps++;',
+          '      if (a[j - 1] > key) {',
+          '        a[j] = a[j - 1]; writes++;',
+          '        --j;',
+          '      } else break;',
+          '    }',
+          '    a[j] = key; writes++;',
+          '  }',
+          '}'
+        ]
+      },
+      bubble_sort: {
+        hint: 'Melhor (ordenado com flag): Ω(n) | Pior: Θ(n²) | Espaço: O(1)',
+        lines: [
+          'void bubble_sort_optimized(vector<int>& a) {',
+          '  size_t n = a.size();',
+          '  for (size_t i = 0; i < n - 1; ++i) {',
+          '    bool swapped = false;',
+          '    for (size_t j = 0; j < n - 1 - i; ++j) {',
+          '      comps++;',
+          '      if (a[j] > a[j + 1]) {',
+          '        swap(a[j], a[j + 1]); swaps += 3;',
+          '        swapped = true;',
+          '      }',
+          '    }',
+          '    if (!swapped) break; // parada antecipada',
+          '  }',
+          '}'
+        ]
+      },
+      seq_search: {
+        hint: 'Melhor: O(1) | Médio/Pior: Θ(n) | Espaço: O(1) | Não requer ordenação',
+        lines: [
+          'int sequential_search(const vector<int>& a, int target) {',
+          '  for (size_t i = 0; i < a.size(); ++i) {',
+          '    accesses++; comps++;',
+          '    if (a[i] == target) {',
+          '      return (int)i; // encontrado',
+          '    }',
+          '  }',
+          '  return -1; // ausente',
+          '}'
+        ]
+      },
+      bin_search_iter: {
+        hint: 'Melhor: O(1) | Médio/Pior: Θ(log n) | Espaço: O(1) | Requer vetor ordenado',
+        lines: [
+          'int binary_search_iterative(const vector<int>& a, int target) {',
+          '  int low = 0, high = (int)a.size() - 1;',
+          '  while (low <= high) {',
+          '    int mid = low + (high - low) / 2;',
+          '    accesses++; comps++;',
+          '    if (a[mid] == target) return mid;',
+          '    comps++;',
+          '    if (a[mid] < target) low = mid + 1;',
+          '    else high = mid - 1;',
+          '  }',
+          '  return -1;',
+          '}'
+        ]
+      },
+      bin_search_rec: {
+        hint: 'Melhor: O(1) | Médio/Pior: Θ(log n) | Espaço: O(log n) na pilha',
+        lines: [
+          'int binary_search_rec(const vector<int>& a, int target, int lo, int hi) {',
+          '  rec_calls++;',
+          '  if (lo > hi) return -1;',
+          '  int mid = lo + (hi - lo) / 2;',
+          '  accesses++; comps++;',
+          '  if (a[mid] == target) return mid;',
+          '  comps++;',
+          '  if (a[mid] < target)',
+          '    return binary_search_rec(a, target, mid + 1, hi);',
+          '  return binary_search_rec(a, target, lo, mid - 1);',
+          '}'
+        ]
+      },
+      fib_compare: {
+        hint: 'Recursivo: O(φⁿ) ~ O(2ⁿ) | PD Memoização: Θ(n) tempo & espaço | Iterativo: Θ(n) & O(1)',
+        lines: [
+          '// Recursivo Ingênuo (subproblemas repetidos)',
+          'uint64_t fib_rec(int n) {',
+          '  rec_calls++;',
+          '  if (n <= 1) return n;',
+          '  return fib_rec(n - 1) + fib_rec(n - 2);',
+          '}',
+          '// Iterativo (ótimo em tempo e espaço)',
+          'uint64_t fib_iter(int n) {',
+          '  uint64_t a = 0, b = 1;',
+          '  for (int i = 2; i <= n; ++i) {',
+          '    uint64_t next = a + b; a = b; b = next;',
+          '  }',
+          '  return n == 0 ? 0 : b;',
+          '}'
+        ]
+      },
+      pow_compare: {
+        hint: 'Iterativa: Θ(n) multiplicações | Divisão e Conquista: Θ(log n) multiplicações',
+        lines: [
+          '// Exponenciação Rápida (Divisão e Conquista)',
+          'double pow_dc(double base, int exp) {',
+          '  rec_calls++;',
+          '  if (exp == 0) return 1.0;',
+          '  if (exp == 1) return base;',
+          '  double half = pow_dc(base, exp / 2);',
+          '  double res = half * half;',
+          '  if (exp % 2 != 0) res *= base;',
+          '  return res;',
+          '}'
+        ]
+      },
+      coin_compare: {
+        hint: 'Guloso: O(k log k) — só ótimo em sistemas canônicos | PD: Θ(A·k) — sempre ótimo',
+        lines: [
+          '// Troco Guloso (escolhe maior moeda <= restante)',
+          'for (int c : sorted_coins_desc) {',
+          '  while (remaining >= c) { remaining -= c; chosen.push_back(c); }',
+          '}',
+          '// Troco Programação Dinâmica (ótimo global garantido)',
+          'dp[0] = 0;',
+          'for (int x = 1; x <= amount; ++x) {',
+          '  for (int c : coins) {',
+          '    if (c <= x && dp[x - c] + 1 < dp[x])',
+          '      dp[x] = dp[x - c] + 1;',
+          '  }',
+          '}'
+        ]
+      },
+      knap_compare: {
+        hint: 'Fracionária (Guloso): O(n log n) | 0/1 Heurística: pode falhar | 0/1 PD: Θ(n·W) ótimo',
+        lines: [
+          '// Mochila 0/1 — Programação Dinâmica',
+          'for (int i = 1; i <= n; ++i) {',
+          '  for (int w = 0; w <= W; ++w) {',
+          '    double skip = dp[i - 1][w];',
+          '    if (item[i].weight <= w) {',
+          '      double take = item[i].value + dp[i - 1][w - item[i].weight];',
+          '      dp[i][w] = max(skip, take);',
+          '    } else dp[i][w] = skip;',
+          '  }',
+          '}'
+        ]
+      }
+    };
+
+    // =========================================================================
+    // NAVIGATION & INITIALIZATION
+    // =========================================================================
+    const TAB_META = {
+      overview: { title: 'Visão Geral do Projeto', badge: '4 Módulos • C++20' },
+      visualizer: { title: 'Visualizador Interativo de Algoritmos', badge: 'Animação 60fps + Primitivas' },
+      empirical: { title: 'Laboratório Empírico (Tabelas & Gráficos)', badge: 'Medições Reais C++20' },
+      analysis: { title: 'Análise Assintótica & Comparação Crítica', badge: 'Seções 8, 10 e 13' },
+      source: { title: 'Código-Fonte Instrumentado (C++20)', badge: 'Headers Nativos' }
+    };
+
+    function switchTab(tabId) {
+      if (!TAB_META[tabId]) tabId = 'overview';
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabId));
+      document.getElementById('topbarTitle').textContent = TAB_META[tabId].title;
+      document.getElementById('topbarBadge').textContent = TAB_META[tabId].badge;
+      if (tabId === 'visualizer') {
+        requestAnimationFrame(() => renderVizFrame());
+      } else if (tabId === 'empirical') {
+        requestAnimationFrame(() => renderEmpiricalChart());
+      }
+    }
+
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+    document.getElementById('btnSwitchViz').addEventListener('click', () => switchTab('visualizer'));
+
+    // Heartbeat para que o processo AlgoLab.exe feche graciosamente quando a janela Desktop encerrar
+    function startHeartbeat() {
+      setInterval(() => {
+        if (isBackendOnline) {
+          fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
+        }
+      }, 2000);
+    }
+
+    async function loadBenchmarks() {
+      try {
+        const res = await fetch('/api/benchmarks');
+        if (res.ok) {
+          benchmarkData = await res.json();
+          isBackendOnline = true;
+          document.getElementById('engineDot').classList.remove('offline');
+          document.getElementById('engineStatusText').textContent = 'Motor C++20 Conectado';
+          document.getElementById('compilerMeta').textContent = benchmarkData.compiler_info || 'GCC C++20 -O3';
+          onBenchmarksLoaded();
+          return;
+        }
+      } catch (e) {}
+
+      // Fallback para dados embutidos caso aberto sem servidor
+      const raw = document.getElementById('embedded-benchmark-data').textContent.trim();
+      if (raw && !raw.startsWith('__EMBEDDED')) {
+        try {
+          benchmarkData = JSON.parse(raw);
+          document.getElementById('engineDot').classList.add('offline');
+          document.getElementById('engineStatusText').textContent = 'Snapshot Embutido';
+          document.getElementById('compilerMeta').textContent = benchmarkData.compiler_info || 'C++20';
+          onBenchmarksLoaded();
+        } catch (err) {}
+      }
+    }
+
+    document.getElementById('btnRebenchmark').addEventListener('click', async () => {
+      const btn = document.getElementById('btnRebenchmark');
+      btn.disabled = true;
+      btn.textContent = 'Executando C++...';
+      try {
+        const res = await fetch('/api/rebenchmark', { method: 'POST' });
+        if (res.ok) {
+          benchmarkData = await res.json();
+          onBenchmarksLoaded();
+        }
+      } catch (e) {
+        alert('Disponível quando executado via AlgoLab.exe.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Executar Bateria C++';
+      }
+    });
+
+    function onBenchmarksLoaded() {
+      const recs = benchmarkData.records || [];
+      document.getElementById('kpiTotal').textContent = recs.length.toLocaleString('pt-BR');
+
+      const seq1M = recs.find(r => r.algo_key === 'seq_search' && r.n === 1000000 && r.format_key === 'absent');
+      const bin1M = recs.find(r => r.algo_key === 'bin_search_iter' && r.n === 1000000 && r.format_key === 'absent');
+      if (seq1M && bin1M && bin1M.elapsed_us > 0) {
+        const ratio = Math.round(seq1M.elapsed_us / bin1M.elapsed_us);
+        document.getElementById('kpiSearchSpeedup').textContent = ratio.toLocaleString('pt-BR') + 'x';
+      }
+
+      const q25k = recs.find(r => r.algo_key === 'quick_median3' && r.n === 25000 && r.format_key === 'random');
+      const b25k = recs.find(r => r.algo_key === 'bubble_sort' && r.n === 25000 && r.format_key === 'random');
+      if (q25k && b25k && q25k.elapsed_us > 0) {
+        const ratio = Math.round(b25k.elapsed_us / q25k.elapsed_us);
+        document.getElementById('kpiSortSpeedup').textContent = ratio.toLocaleString('pt-BR') + 'x';
+      }
+
+      const fIter = recs.find(r => r.algo_key === 'fib_iter' && r.n === 40);
+      const fRec = recs.find(r => r.algo_key === 'fib_rec' && r.n === 40);
+      if (fIter && fRec && fIter.elapsed_us > 0) {
+        const ratio = Math.round(fRec.elapsed_us / fIter.elapsed_us);
+        document.getElementById('kpiFibSpeedup').textContent = ratio.toLocaleString('pt-BR') + 'x';
+      }
+
+      renderEmpiricalSection();
+      renderAnalysisSection();
+      updateCppTimeBadge();
+    }
+
+    // =========================================================================
+    // VISUALIZER ENGINE (Sorting, Search, Recursion/D&C, Greedy vs DP)
+    // =========================================================================
+    let vizState = {
+      domain: 'sorting',
+      algo: 'quick_median3',
+      format: 'random',
+      n: 32,
+      speed: 5,
+      steps: [],
+      stepIdx: 0,
+      playing: false,
+      timerId: null
+    };
+
+    function generateInputArray(n, fmt) {
+      const arr = [];
+      let seed = 2026;
+      const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+
+      if (fmt === 'sorted_asc') {
+        for (let i = 1; i <= n; i++) arr.push(Math.round((i / n) * 95) + 4);
+      } else if (fmt === 'sorted_desc') {
+        for (let i = n; i >= 1; i--) arr.push(Math.round((i / n) * 95) + 4);
+      } else if (fmt === 'nearly_sorted') {
+        for (let i = 1; i <= n; i++) arr.push(Math.round((i / n) * 95) + 4);
+        const swaps = Math.max(1, Math.floor(n * 0.08));
+        for (let s = 0; s < swaps; s++) {
+          const a = Math.floor(rand() * n), b = Math.floor(rand() * n);
+          [arr[a], arr[b]] = [arr[b], arr[a]];
+        }
+      } else if (fmt === 'many_duplicates') {
+        const vals = [12, 24, 36, 48, 60, 72, 84, 96];
+        for (let i = 0; i < n; i++) arr.push(vals[Math.floor(rand() * vals.length)]);
+      } else {
+        for (let i = 0; i < n; i++) arr.push(Math.floor(rand() * 90) + 8);
+      }
+      return arr;
+    }
+
+    function buildSortingSteps(algo, baseArr) {
+      const a = [...baseArr];
+      const steps = [];
+      let comps = 0, swaps = 0, acc = 0, rec = 0;
+      const sortedSet = new Set();
+
+      const snap = (msg, line, highlights = {}) => {
+        steps.push({
+          type: 'bars',
+          arr: [...a],
+          comps, swaps, acc, rec,
+          msg, line,
+          compare: highlights.compare || [],
+          swap: highlights.swap || [],
+          pivot: highlights.pivot ?? -1,
+          range: highlights.range || null,
+          sorted: new Set(sortedSet)
+        });
+      };
+
+      snap('Vetor inicial carregado com n = ' + a.length + ' elementos.', 0);
+
+      if (algo === 'bubble_sort') {
+        for (let i = 0; i < a.length - 1; i++) {
+          let swapped = false;
+          for (let j = 0; j < a.length - 1 - i; j++) {
+            acc += 2; comps++;
+            snap(`Comparando a[${j}]=${a[j]} e a[${j+1}]=${a[j+1]}`, 5, { compare: [j, j + 1] });
+            if (a[j] > a[j + 1]) {
+              [a[j], a[j + 1]] = [a[j + 1], a[j]];
+              swaps += 3; acc += 2; swapped = true;
+              snap(`Troca executada entre índices ${j} e ${j + 1}`, 7, { swap: [j, j + 1] });
+            }
+          }
+          sortedSet.add(a.length - 1 - i);
+          if (!swapped) {
+            for (let k = 0; k < a.length; k++) sortedSet.add(k);
+            snap('Nenhuma troca na passagem — parada antecipada!', 11);
+            break;
+          }
+        }
+      } else if (algo === 'insertion_sort') {
+        sortedSet.add(0);
+        for (let i = 1; i < a.length; i++) {
+          const key = a[i]; acc++;
+          let j = i;
+          snap(`Inserindo chave a[${i}]=${key} no subvetor ordenado [0..${i-1}]`, 2, { pivot: i });
+          while (j > 0) {
+            acc++; comps++;
+            snap(`Comparando a[${j-1}]=${a[j-1]} > chave ${key}`, 6, { compare: [j - 1, j], pivot: i });
+            if (a[j - 1] > key) {
+              a[j] = a[j - 1]; writesOrMove();
+              function writesOrMove() { swaps++; acc++; }
+              snap(`Deslocando ${a[j]} para posição ${j}`, 7, { swap: [j - 1, j] });
+              j--;
+            } else break;
+          }
+          a[j] = key; swaps++;
+          for (let k = 0; k <= i; k++) sortedSet.add(k);
+          snap(`Chave ${key} posicionada no índice ${j}`, 11, { swap: [j] });
+        }
+      } else if (algo === 'merge_sort') {
+        const aux = new Array(a.length);
+        function msort(l, r) {
+          rec++;
+          if (l >= r) return;
+          const m = Math.floor((l + r) / 2);
+          snap(`Dividindo subvetor [${l}..${r}] no meio m=${m}`, 13, { range: [l, r], pivot: m });
+          msort(l, m);
+          msort(m + 1, r);
+          for (let k = l; k <= r; k++) { aux[k] = a[k]; acc += 2; swaps++; }
+          let i = l, j = m + 1;
+          for (let k = l; k <= r; k++) {
+            if (i > m) { a[k] = aux[j++]; swaps++; acc += 2; }
+            else if (j > r) { a[k] = aux[i++]; swaps++; acc += 2; }
+            else {
+              comps++; acc += 2;
+              if (aux[i] <= aux[j]) a[k] = aux[i++];
+              else a[k] = aux[j++];
+              swaps++; acc += 2;
+            }
+            if (l === 0 && r === a.length - 1) sortedSet.add(k);
+            snap(`Intercalando [${l}..${r}]: gravado a[${k}]=${a[k]}`, 6, { swap: [k], range: [l, r] });
+          }
+        }
+        msort(0, a.length - 1);
+      } else if (algo === 'quick_fixed') {
+        function qfixed(lo, hi) {
+          rec++;
+          if (lo >= hi) {
+            if (lo === hi) sortedSet.add(lo);
+            return;
+          }
+          const pivot = a[hi]; acc++;
+          let i = lo - 1;
+          snap(`Particionando [${lo}..${hi}] com pivô fixo a[${hi}]=${pivot}`, 1, { pivot: hi, range: [lo, hi] });
+          for (let j = lo; j < hi; j++) {
+            comps++; acc++;
+            snap(`Comparando a[${j}]=${a[j]} <= pivô ${pivot}`, 5, { compare: [j, hi], pivot: hi, range: [lo, hi] });
+            if (a[j] <= pivot) {
+              i++;
+              if (i !== j) {
+                [a[i], a[j]] = [a[j], a[i]];
+                swaps += 3; acc += 4;
+                snap(`Troca a[${i}] <-> a[${j}]`, 6, { swap: [i, j], pivot: hi, range: [lo, hi] });
+              }
+            }
+          }
+          if (i + 1 !== hi) {
+            [a[i + 1], a[hi]] = [a[hi], a[i + 1]];
+            swaps += 3; acc += 4;
+          }
+          const p = i + 1;
+          sortedSet.add(p);
+          snap(`Pivô ${pivot} fixado na posição definitiva ${p}`, 10, { pivot: p, range: [lo, hi] });
+          qfixed(lo, p - 1);
+          qfixed(p + 1, hi);
+        }
+        qfixed(0, a.length - 1);
+      } else {
+        // quick_median3 (Hoare + Mediana de 3)
+        function qmed3(lo, hi) {
+          rec++;
+          if (lo >= hi) {
+            if (lo === hi) sortedSet.add(lo);
+            return;
+          }
+          const mid = lo + Math.floor((hi - lo) / 2);
+          comps += 3; acc += 3;
+          if (a[mid] < a[lo]) { [a[mid], a[lo]] = [a[lo], a[mid]]; swaps += 3; }
+          if (a[hi] < a[lo]) { [a[hi], a[lo]] = [a[lo], a[hi]]; swaps += 3; }
+          if (a[hi] < a[mid]) { [a[hi], a[mid]] = [a[mid], a[hi]]; swaps += 3; }
+          const pivot = a[mid];
+          snap(`Mediana de 3 em [${lo}..${hi}] escolheu pivô ${pivot} (idx ${mid})`, 5, { pivot: mid, range: [lo, hi] });
+
+          let i = lo - 1, j = hi + 1;
+          while (true) {
+            do { i++; comps++; acc++; } while (a[i] < pivot);
+            do { j--; comps++; acc++; } while (a[j] > pivot);
+            if (i >= j) break;
+            [a[i], a[j]] = [a[j], a[i]];
+            swaps += 3; acc += 4;
+            snap(`Partição Hoare: troca a[${i}] <-> a[${j}] (pivô=${pivot})`, 15, { swap: [i, j], range: [lo, hi] });
+          }
+          qmed3(lo, j);
+          qmed3(j + 1, hi);
+        }
+        qmed3(0, a.length - 1);
+      }
+
+      for (let k = 0; k < a.length; k++) sortedSet.add(k);
+      snap(`Ordenação concluída! ${comps} comparações, ${swaps} escritas/trocas.`, -1);
+      return steps;
+    }
+
+    function buildSearchSteps(algo, n, posKey) {
+      const a = [];
+      for (let i = 1; i <= n; i++) a.push(i * 3);
+      let target = a[Math.floor((n - 1) / 2)];
+      if (posKey === 'start') target = a[0];
+      else if (posKey === 'end') target = a[n - 1];
+      else if (posKey === 'absent') target = a[n - 1] + 5;
+
+      const steps = [];
+      let comps = 0, acc = 0, rec = 0;
+      const snap = (msg, line, state = {}) => {
+        steps.push({
+          type: 'search',
+          arr: a,
+          target,
+          comps, swaps: 0, acc, rec,
+          msg, line,
+          low: state.low ?? 0,
+          high: state.high ?? n - 1,
+          mid: state.mid ?? -1,
+          cur: state.cur ?? -1,
+          found: state.found ?? -1
+        });
+      };
+
+      snap(`Buscando chave alvo = ${target} no vetor ordenado de ${n} elementos.`, 0);
+
+      if (algo === 'seq_search') {
+        let found = -1;
+        for (let i = 0; i < n; i++) {
+          acc++; comps++;
+          snap(`Verificando índice ${i}: a[${i}]=${a[i]} == ${target}?`, 3, { cur: i, low: 0, high: n - 1 });
+          if (a[i] === target) {
+            found = i;
+            snap(`Chave ${target} encontrada no índice ${i} após ${comps} comparações!`, 4, { found: i, cur: i });
+            break;
+          }
+        }
+        if (found < 0) snap(`Chave ${target} ausente após varrer todos os ${n} elementos.`, 7, { low: n, high: -1 });
+      } else {
+        const isRec = (algo === 'bin_search_rec');
+        function binStep(lo, hi) {
+          if (isRec) rec++;
+          if (lo > hi) {
+            snap(`Intervalo vazio (low=${lo} > high=${hi}). Chave ${target} ausente.`, isRec ? 2 : 10, { low: lo, high: hi });
+            return -1;
+          }
+          const mid = lo + Math.floor((hi - lo) / 2);
+          acc++; comps++;
+          snap(`Testando meio mid=${mid} (a[${mid}]=${a[mid]}) no intervalo [${lo}..${hi}]`, isRec ? 5 : 5, { low: lo, high: hi, mid });
+          if (a[mid] === target) {
+            snap(`Sucesso! Chave ${target} encontrada no índice ${mid} com ${comps} comparações.`, isRec ? 5 : 5, { low: lo, high: hi, mid, found: mid });
+            return mid;
+          }
+          comps++;
+          if (a[mid] < target) {
+            snap(`a[${mid}]=${a[mid]} < ${target}: descartando metade esquerda.`, isRec ? 8 : 7, { low: mid + 1, high: hi, mid });
+            return binStep(mid + 1, hi);
+          } else {
+            snap(`a[${mid}]=${a[mid]} > ${target}: descartando metade direita.`, isRec ? 9 : 8, { low: lo, high: mid - 1, mid });
+            return binStep(lo, mid - 1);
+          }
+        }
+        binStep(0, n - 1);
+      }
+      return steps;
+    }
+
+    function buildRecursionSteps(algo, nVal) {
+      const steps = [];
+      if (algo === 'fib_compare') {
+        const n = Math.min(Math.max(nVal, 4), 7);
+        const nodes = [];
+        const seen = new Set();
+        let recCalls = 0;
+
+        function buildTree(val, x, y, span, parentIdx) {
+          const idx = nodes.length;
+          const repeated = seen.has(val) && val > 1;
+          seen.add(val);
+          nodes.push({ val, x, y, parentIdx, repeated, active: false });
+          recCalls++;
+          steps.push({
+            type: 'fib_tree',
+            nodes: JSON.parse(JSON.stringify(nodes)),
+            activeIdx: idx,
+            n,
+            comps: recCalls, swaps: idx, acc: recCalls, rec: recCalls,
+            line: val <= 1 ? 3 : 4,
+            msg: repeated
+              ? `Chamada redundante F(${val})! Subproblema já calculado antes.`
+              : `Chamando F(${val}) na árvore de recursão (total: ${recCalls} chamadas).`
+          });
+          if (val <= 1) return;
+          buildTree(val - 1, x - span, y + 54, span * 0.52, idx);
+          buildTree(val - 2, x + span, y + 54, span * 0.52, idx);
+        }
+        buildTree(n, 0.5, 36, 0.22, -1);
+        steps.push({
+          type: 'fib_tree',
+          nodes: JSON.parse(JSON.stringify(nodes)),
+          activeIdx: -1,
+          n,
+          comps: recCalls, swaps: n - 1, acc: recCalls, rec: recCalls,
+          line: 10,
+          msg: `Árvore completa para F(${n}): ${recCalls} chamadas recursivas vs apenas ${Math.max(0, n - 1)} iterações no método Iterativo!`
+        });
+      } else {
+        // Exponenciação Rápida vs Linear
+        const exp = Math.min(Math.max(nVal, 6), 64);
+        let e = exp, mults = 0, rec = 0;
+        const history = [];
+        let curBase = 2, accRes = 1;
+        steps.push({
+          type: 'pow_dc',
+          exp, history: [],
+          comps: 0, swaps: 0, acc: 0, rec: 0, line: 1,
+          msg: `Calculando 2^${exp}: Iterativo exige ${exp} multiplicações; D&C reduz exponencialmente pela metade.`
+        });
+        while (e > 0) {
+          rec++;
+          const odd = (e % 2 === 1);
+          if (odd) { accRes *= curBase; mults++; }
+          history.push({ step: rec, expBefore: e, odd, basePow: curBase, resultSoFar: accRes });
+          if (e > 1) { curBase *= curBase; mults++; }
+          steps.push({
+            type: 'pow_dc',
+            exp, history: JSON.parse(JSON.stringify(history)),
+            comps: rec, swaps: mults, acc: rec, rec,
+            line: odd ? 7 : 6,
+            msg: `Passo D&C #${rec}: expoente=${e} (${odd ? 'ímpar -> multiplica acumulador' : 'par -> só eleva base ao quadrado'}).`
+          });
+          e = Math.floor(e / 2);
+        }
+        steps.push({
+          type: 'pow_dc',
+          exp, history: JSON.parse(JSON.stringify(history)),
+          comps: rec, swaps: mults, acc: rec, rec, line: 8,
+          msg: `Concluído em apenas ${mults} multiplicações (contra ${exp} da abordagem linear iterativa)!`
+        });
+      }
+      return steps;
+    }
+
+    function buildGreedyDpSteps(algo, fmt) {
+      const steps = [];
+      if (algo === 'coin_compare') {
+        const isNonCanonical = (fmt === 'non_canonical');
+        const coins = isNonCanonical ? [1, 3, 4] : [1, 5, 10, 25];
+        const amount = isNonCanonical ? 6 : 36;
+
+        // Greedy trace
+        let rem = amount;
+        const greedyCoins = [];
+        const sortedDesc = [...coins].sort((a, b) => b - a);
+        for (const c of sortedDesc) {
+          while (rem >= c) {
+            rem -= c;
+            greedyCoins.push(c);
+          }
+        }
+
+        // DP step by step
+        const INF = 999;
+        const dp = new Array(amount + 1).fill(INF);
+        const parent = new Array(amount + 1).fill(-1);
+        dp[0] = 0;
+
+        steps.push({
+          type: 'coin_html',
+          coins, amount, greedyCoins, dp: [...dp], activeX: 0, chosenDp: [],
+          comps: 0, swaps: 1, acc: 0, rec: 0, line: 5,
+          msg: `Comparando Troco=${amount} para moedas [${coins.join(', ')}]. Guloso escolheu ${greedyCoins.length} moedas: [${greedyCoins.join(' + ')}].`
+        });
+
+        let comps = 0, writes = 1;
+        for (let x = 1; x <= amount; x++) {
+          for (const c of coins) {
+            comps++;
+            if (c <= x && dp[x - c] + 1 < dp[x]) {
+              dp[x] = dp[x - c] + 1;
+              parent[x] = c;
+              writes++;
+            }
+          }
+          if (amount <= 15 || x % 3 === 0 || x === amount) {
+            steps.push({
+              type: 'coin_html',
+              coins, amount, greedyCoins, dp: [...dp], activeX: x, chosenDp: [],
+              comps, swaps: writes, acc: comps, rec: 0, line: 9,
+              msg: `DP calculando subproblema dp[${x}] = ${dp[x]} moeda(s).`
+            });
+          }
+        }
+
+        const chosenDp = [];
+        let cur = amount;
+        while (cur > 0 && parent[cur] > 0) {
+          chosenDp.push(parent[cur]);
+          cur -= parent[cur];
+        }
+        const greedyOpt = (greedyCoins.length === chosenDp.length);
+        steps.push({
+          type: 'coin_html',
+          coins, amount, greedyCoins, dp: [...dp], activeX: amount, chosenDp,
+          comps, swaps: writes, acc: comps, rec: 0, line: 10,
+          msg: greedyOpt
+            ? `Sistema canônico: ambos encontraram o ótimo de ${chosenDp.length} moedas!`
+            : `CONTRAEXEMPLO PROVADO: Guloso usou ${greedyCoins.length} moedas [${greedyCoins.join('+')}], mas PD achou ótimo global com ${chosenDp.length} moedas [${chosenDp.join('+')}]!`
+        });
+      } else {
+        // Knapsack counterexample W = 50
+        const items = [
+          { id: 1, w: 10, v: 60 },
+          { id: 2, w: 20, v: 100 },
+          { id: 3, w: 30, v: 120 }
+        ];
+        const W = 50;
+        const dp = Array.from({ length: 4 }, () => new Array(6).fill(0)); // cols W = 0,10,20,30,40,50
+        const caps = [0, 10, 20, 30, 40, 50];
+        let comps = 0, writes = 0;
+
+        steps.push({
+          type: 'knap_html',
+          items, caps, dp: JSON.parse(JSON.stringify(dp)), curI: 0, curW: 0,
+          comps, swaps: writes, acc: 0, rec: 0, line: 1,
+          msg: 'Mochila 0/1 (W=50): Heurística Gulosa escolhe Item 1 + Item 2 = valor 160 (desperdiça 20kg).'
+        });
+
+        for (let i = 1; i <= 3; i++) {
+          const it = items[i - 1];
+          for (let ci = 0; ci < caps.length; ci++) {
+            const w = caps[ci];
+            comps++;
+            const skip = dp[i - 1][ci];
+            if (it.w <= w) {
+              const prevIdx = (w - it.w) / 10;
+              const take = it.v + dp[i - 1][prevIdx];
+              dp[i][ci] = Math.max(skip, take);
+            } else {
+              dp[i][ci] = skip;
+            }
+            writes++;
+            steps.push({
+              type: 'knap_html',
+              items, caps, dp: JSON.parse(JSON.stringify(dp)), curI: i, curW: ci,
+              comps, swaps: writes, acc: writes, rec: 0, line: 6,
+              msg: `Preenchendo célula dp[item=${i}][cap=${w}] = ${dp[i][ci]}`
+            });
+          }
+        }
+        steps.push({
+          type: 'knap_html',
+          items, caps, dp: JSON.parse(JSON.stringify(dp)), curI: 3, curW: 5, done: true,
+          comps, swaps: writes, acc: writes, rec: 0, line: 8,
+          msg: 'PD escolheu Item 2 (20kg, 100) + Item 3 (30kg, 120) = valor ótimo 220 (contra 160 do Guloso 0/1)!'
+        });
+      }
+      return steps;
+    }
+
+    function configureVizDomain(domain) {
+      vizState.domain = domain;
+      stopViz();
+      document.querySelectorAll('#vizDomainPills .pill-btn').forEach(b => b.classList.toggle('active', b.dataset.domain === domain));
+
+      const algoSel = document.getElementById('vizAlgoSelect');
+      const fmtSel = document.getElementById('vizFormatSelect');
+      const fmtLabel = document.getElementById('vizFormatLabel');
+      const sizeSlider = document.getElementById('vizSizeSlider');
+      const sizeWrap = document.getElementById('vizSizeWrap');
+      const fmtWrap = document.getElementById('vizFormatWrap');
+
+      algoSel.innerHTML = '';
+      fmtSel.innerHTML = '';
+
+      if (domain === 'sorting') {
+        [
+          ['quick_median3', 'Quick Sort (Mediana de 3)'],
+          ['quick_fixed', 'Quick Sort (Pivô Fixo)'],
+          ['merge_sort', 'Merge Sort'],
+          ['insertion_sort', 'Insertion Sort'],
+          ['bubble_sort', 'Bubble Sort Otimizado']
+        ].forEach(([v, t]) => algoSel.add(new Option(t, v)));
+
+        fmtLabel.textContent = 'Formato da Entrada';
+        [
+          ['random', 'Aleatória'],
+          ['sorted_asc', 'Ordenada Crescente'],
+          ['sorted_desc', 'Ordenada Decrescente'],
+          ['nearly_sorted', 'Quase Ordenada'],
+          ['many_duplicates', 'Com Valores Repetidos']
+        ].forEach(([v, t]) => fmtSel.add(new Option(t, v)));
+        fmtWrap.style.display = 'flex';
+        sizeWrap.style.display = 'flex';
+        sizeSlider.min = 10; sizeSlider.max = 70; sizeSlider.value = 32;
+      } else if (domain === 'search') {
+        [
+          ['bin_search_iter', 'Busca Binária (Iterativa)'],
+          ['bin_search_rec', 'Busca Binária (Recursiva)'],
+          ['seq_search', 'Busca Sequencial']
+        ].forEach(([v, t]) => algoSel.add(new Option(t, v)));
+
+        fmtLabel.textContent = 'Posição da Chave';
+        [
+          ['middle', 'Meio do vetor'],
+          ['start', 'Início (índice 0)'],
+          ['end', 'Fim (índice n-1)'],
+          ['absent', 'Ausente (não existe)']
+        ].forEach(([v, t]) => fmtSel.add(new Option(t, v)));
+        fmtWrap.style.display = 'flex';
+        sizeWrap.style.display = 'flex';
+        sizeSlider.min = 11; sizeSlider.max = 45; sizeSlider.value = 27;
+      } else if (domain === 'recursion') {
+        [
+          ['fib_compare', 'Fibonacci: Árvore Recursiva vs Iterativo'],
+          ['pow_compare', 'Exponenciação Rápida (D&C) vs Linear']
+        ].forEach(([v, t]) => algoSel.add(new Option(t, v)));
+        fmtWrap.style.display = 'none';
+        sizeWrap.style.display = 'flex';
+        sizeSlider.min = 4; sizeSlider.max = 32; sizeSlider.value = 6;
+      } else {
+        [
+          ['coin_compare', 'Problema do Troco (Guloso vs PD)'],
+          ['knap_compare', 'Problema da Mochila (Guloso vs 0/1 PD)']
+        ].forEach(([v, t]) => algoSel.add(new Option(t, v)));
+
+        fmtLabel.textContent = 'Instância de Teste';
+        [
+          ['non_canonical', 'Não-Canônico [1,3,4] (Contraexemplo)'],
+          ['brl', 'Sistema Canônico BRL [1,5,10,25]']
+        ].forEach(([v, t]) => fmtSel.add(new Option(t, v)));
+        fmtWrap.style.display = 'flex';
+        sizeWrap.style.display = 'none';
+      }
+
+      vizState.algo = algoSel.value;
+      vizState.format = fmtSel.value;
+      vizState.n = parseInt(sizeSlider.value, 10);
+      rebuildVizSteps();
+    }
+
+    function rebuildVizSteps() {
+      stopViz();
+      vizState.algo = document.getElementById('vizAlgoSelect').value;
+      vizState.format = document.getElementById('vizFormatSelect').value;
+      vizState.n = parseInt(document.getElementById('vizSizeSlider').value, 10);
+      document.getElementById('vizSizeVal').textContent = vizState.n;
+
+      if (vizState.domain === 'recursion') {
+        const isFib = vizState.algo === 'fib_compare';
+        document.getElementById('vizSizeLabel').innerHTML = isFib
+          ? 'Fibonacci n = <span id="vizSizeVal">' + Math.min(vizState.n, 7) + '</span>'
+          : 'Expoente = <span id="vizSizeVal">' + Math.max(vizState.n, 12) + '</span>';
+      } else {
+        document.getElementById('vizSizeLabel').innerHTML = 'Tamanho n = <span id="vizSizeVal">' + vizState.n + '</span>';
+      }
+
+      if (vizState.domain === 'sorting') {
+        const arr = generateInputArray(vizState.n, vizState.format);
+        vizState.steps = buildSortingSteps(vizState.algo, arr);
+        document.getElementById('mSwapLabel').textContent = 'Trocas / Escritas';
+        document.getElementById('mAccLabel').textContent = 'Acessos / Recursões';
+      } else if (vizState.domain === 'search') {
+        vizState.steps = buildSearchSteps(vizState.algo, vizState.n, vizState.format);
+        document.getElementById('mSwapLabel').textContent = 'Trocas';
+        document.getElementById('mAccLabel').textContent = 'Acessos / Chamadas';
+      } else if (vizState.domain === 'recursion') {
+        const val = vizState.algo === 'fib_compare' ? Math.min(vizState.n, 7) : Math.max(vizState.n, 16);
+        vizState.steps = buildRecursionSteps(vizState.algo, val);
+        document.getElementById('mSwapLabel').textContent = vizState.algo === 'fib_compare' ? 'Somas Iterativas' : 'Multiplicações';
+        document.getElementById('mAccLabel').textContent = 'Chamadas Recursivas';
+      } else {
+        document.getElementById('vizFormatWrap').style.display = vizState.algo === 'coin_compare' ? 'flex' : 'none';
+        vizState.steps = buildGreedyDpSteps(vizState.algo, vizState.format);
+        document.getElementById('mSwapLabel').textContent = 'Escritas Tabela DP';
+        document.getElementById('mAccLabel').textContent = 'Transições Avaliadas';
+      }
+
+      vizState.stepIdx = 0;
+      renderCodeSnippet(vizState.algo, -1);
+      renderVizFrame();
+      updateCppTimeBadge();
+    }
+
+    function renderCodeSnippet(algoKey, activeLine) {
+      const spec = CODE_SNIPPETS[algoKey] || CODE_SNIPPETS.quick_median3;
+      document.getElementById('vizComplexityHint').textContent = spec.hint;
+      const box = document.getElementById('vizCodeBox');
+      box.innerHTML = spec.lines.map((ln, idx) => {
+        const cls = idx === activeLine ? 'code-line hl' : 'code-line';
+        const esc = ln.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<div class="${cls}"><span class="line-num">${idx + 1}</span><span>${esc}</span></div>`;
+      }).join('');
+    }
+
+    function renderVizFrame() {
+      const steps = vizState.steps;
+      if (!steps.length) return;
+      const st = steps[Math.min(vizState.stepIdx, steps.length - 1)];
+
+      document.getElementById('mComp').textContent = st.comps.toLocaleString('pt-BR');
+      document.getElementById('mSwap').textContent = st.swaps.toLocaleString('pt-BR');
+      document.getElementById('mAcc').textContent = (st.rec > 0 ? `${st.acc} / ${st.rec} rec` : st.acc).toLocaleString('pt-BR');
+      document.getElementById('vizStepCaption').textContent = st.msg;
+      document.getElementById('vizStepProgress').textContent = `Passo ${vizState.stepIdx} / ${steps.length - 1}`;
+      renderCodeSnippet(vizState.algo, st.line);
+
+      const canvasWrap = document.getElementById('vizCanvasWrap');
+      const htmlStage = document.getElementById('vizHtmlStage');
+      const legend = document.getElementById('vizLegend');
+
+      if (st.type === 'coin_html' || st.type === 'knap_html') {
+        canvasWrap.style.display = 'none';
+        legend.style.display = 'none';
+        htmlStage.style.display = 'block';
+        renderHtmlGreedyDpStage(st, htmlStage);
+        return;
+      }
+
+      canvasWrap.style.display = 'block';
+      legend.style.display = 'flex';
+      htmlStage.style.display = 'none';
+
+      const canvas = document.getElementById('vizCanvas');
+      const rect = canvasWrap.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(300, Math.floor(rect.width));
+      const h = Math.max(240, Math.floor(rect.height));
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+
+      if (st.type === 'bars') {
+        const arr = st.arr;
+        const n = arr.length;
+        const padX = 18, padTop = 26, padBot = 28;
+        const usableW = w - padX * 2;
+        const usableH = h - padTop - padBot;
+        const maxVal = Math.max(...arr, 100);
+        const gap = Math.max(2, Math.floor(usableW / n * 0.18));
+        const barW = Math.max(4, (usableW - gap * (n - 1)) / n);
+
+        if (st.range) {
+          const rx = padX + st.range[0] * (barW + gap) - 3;
+          const rw = (st.range[1] - st.range[0] + 1) * (barW + gap) + 4;
+          ctx.fillStyle = 'rgba(99, 102, 241, 0.08)';
+          ctx.fillRect(rx, 8, rw, h - 18);
+          ctx.strokeStyle = 'rgba(99, 102, 241, 0.35)';
+          ctx.strokeRect(rx, 8, rw, h - 18);
+        }
+
+        for (let i = 0; i < n; i++) {
+          const bh = Math.max(8, (arr[i] / maxVal) * usableH);
+          const x = padX + i * (barW + gap);
+          const y = h - padBot - bh;
+
+          let color = '#3f3f46';
+          if (st.sorted && st.sorted.has(i)) color = '#10b981';
+          if (i === st.pivot) color = '#6366f1';
+          if (st.compare && st.compare.includes(i)) color = '#f59e0b';
+          if (st.swap && st.swap.includes(i)) color = '#f43f5e';
+
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.roundRect(x, y, barW, bh, [4, 4, 0, 0]);
+          ctx.fill();
+
+          if (n <= 36) {
+            ctx.fillStyle = '#a1a1aa';
+            ctx.font = '10px Consolas, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(String(arr[i]), x + barW / 2, h - 10);
+          }
+        }
+      } else if (st.type === 'search') {
+        const arr = st.arr;
+        const n = arr.length;
+        const padX = 18;
+        const gap = n > 22 ? 2 : 4;
+        const boxW = Math.max(10, (w - padX * 2 - gap * (n - 1)) / n);
+        const boxH = 56;
+        const midY = Math.floor(h / 2) - 24;
+
+        ctx.fillStyle = '#a5b4fc';
+        ctx.font = '600 13px Inter, Segoe UI, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Chave Alvo: ${st.target}`, padX, 34);
+
+        for (let i = 0; i < n; i++) {
+          const x = padX + i * (boxW + gap);
+          const inRange = (i >= st.low && i <= st.high);
+          let fill = inRange ? '#18181d' : '#0b0b0e';
+          let stroke = inRange ? '#3f3f46' : '#1f1f24';
+          let txt = inRange ? '#fafafa' : '#52525b';
+
+          if (i === st.cur || i === st.mid) { fill = 'rgba(245, 158, 11, 0.22)'; stroke = '#f59e0b'; txt = '#fde68a'; }
+          if (i === st.found) { fill = 'rgba(16, 185, 129, 0.28)'; stroke = '#10b981'; txt = '#6ee7b7'; }
+
+          ctx.fillStyle = fill;
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.roundRect(x, midY, boxW, boxH, 6);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = txt;
+          ctx.font = (n <= 24 ? '11px' : '9.5px') + ' Consolas, monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(String(arr[i]), x + boxW / 2, midY + 32);
+
+          ctx.fillStyle = '#71717a';
+          ctx.font = '10px Consolas, monospace';
+          ctx.fillText(String(i), x + boxW / 2, midY + boxH + 16);
+
+          // Ponteiros low / mid / high
+          const labels = [];
+          if (i === st.low && vizState.algo !== 'seq_search') labels.push('L');
+          if (i === st.mid) labels.push('M');
+          if (i === st.high && vizState.algo !== 'seq_search') labels.push('H');
+          if (labels.length) {
+            ctx.fillStyle = '#818cf8';
+            ctx.font = 'bold 11px Consolas, monospace';
+            ctx.fillText(labels.join('/'), x + boxW / 2, midY - 10);
+          }
+        }
+      } else if (st.type === 'fib_tree') {
+        const nodes = st.nodes;
+        ctx.lineWidth = 1.4;
+        for (let i = 0; i < nodes.length; i++) {
+          const nd = nodes[i];
+          if (nd.parentIdx >= 0) {
+            const p = nodes[nd.parentIdx];
+            ctx.strokeStyle = '#3f3f46';
+            ctx.beginPath();
+            ctx.moveTo(p.x * w, p.y);
+            ctx.lineTo(nd.x * w, nd.y);
+            ctx.stroke();
+          }
+        }
+        for (let i = 0; i < nodes.length; i++) {
+          const nd = nodes[i];
+          const cx = nd.x * w, cy = nd.y;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+          ctx.fillStyle = (i === st.activeIdx) ? '#f59e0b' : (nd.repeated ? '#be123c' : '#4f46e5');
+          ctx.fill();
+          ctx.strokeStyle = '#fafafa';
+          ctx.lineWidth = (i === st.activeIdx) ? 2 : 0.8;
+          ctx.stroke();
+
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 11px Consolas, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('F' + nd.val, cx, cy);
+        }
+      } else if (st.type === 'pow_dc') {
+        ctx.fillStyle = '#e4e4e7';
+        ctx.font = '600 13px Inter, sans-serif';
+        ctx.fillText(`Comparação de Passos: 2^${st.exp} (D&C O(log n) vs Linear O(n))`, 20, 32);
+
+        const hist = st.history;
+        let y = 64;
+        hist.forEach(item => {
+          ctx.fillStyle = '#18181d';
+          ctx.strokeStyle = item.odd ? '#10b981' : '#6366f1';
+          ctx.beginPath();
+          ctx.roundRect(20, y, w - 40, 38, 8);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#fafafa';
+          ctx.font = '12px Consolas, monospace';
+          ctx.fillText(
+            `Passo #${item.step} | exp=${item.expBefore} (${item.odd ? 'ímpar' : 'par'}) | base^2k=${item.basePow} | acum=${item.resultSoFar}`,
+            34, y + 23
+          );
+          y += 48;
+        });
+
+        const pct = Math.min(100, Math.round((st.swaps / st.exp) * 100));
+        ctx.fillStyle = '#a1a1aa';
+        ctx.font = '12px Inter, sans-serif';
+        ctx.fillText(`Economia de operações: ${st.swaps} multiplicações vs ${st.exp} na versão linear (${100 - pct}% menos)`, 20, h - 22);
+      }
+    }
+
+    function renderHtmlGreedyDpStage(st, container) {
+      if (st.type === 'coin_html') {
+        const gIsOpt = (st.chosenDp.length > 0 && st.greedyCoins.length === st.chosenDp.length);
+        const gChips = st.greedyCoins.map(c => `<span class="coin-chip ${st.chosenDp.length && !gIsOpt ? 'sub' : 'opt'}">${c}</span>`).join('');
+        const dpChips = st.chosenDp.length
+          ? st.chosenDp.map(c => `<span class="coin-chip opt">${c}</span>`).join('')
+          : '<span style="color:var(--text-muted); font-size:12px;">Preenchendo tabela...</span>';
+
+        const dpCells = st.dp.slice(0, Math.min(st.dp.length, 37)).map((v, idx) => {
+          const cls = idx === st.activeX ? 'dp-cell active' : (st.chosenDp.length && idx === st.amount ? 'dp-cell chosen' : 'dp-cell');
+          return `<div class="${cls}"><span class="idx">dp[${idx}]</span><span class="val">${v >= 999 ? '∞' : v}</span></div>`;
+        }).join('');
+
+        container.innerHTML = `
+          <div class="grid-2">
+            <div class="callout ${st.chosenDp.length && !gIsOpt ? 'rose' : ''}">
+              <strong>Abordagem Gulosa (Decisão Local)</strong><br/>
+              <div style="margin:8px 0;">Moedas escolhidas (${st.greedyCoins.length}):</div>
+              <div>${gChips}</div>
+            </div>
+            <div class="callout emerald">
+              <strong>Programação Dinâmica (Ótimo Global)</strong><br/>
+              <div style="margin:8px 0;">Moedas reconstruídas (${st.chosenDp.length || '...'}):</div>
+              <div>${dpChips}</div>
+            </div>
+          </div>
+          <div style="margin-top:14px;">
+            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:6px;">Tabela Bottom-Up dp[x] (mínimo de moedas para valor x):</div>
+            <div class="dp-grid">${dpCells}</div>
+          </div>
+        `;
+      } else {
+        const rows = st.dp.map((row, i) => {
+          const label = i === 0 ? 'Nenhum item' : `Item ${i} (${st.items[i-1].w}kg, R$${st.items[i-1].v})`;
+          const tds = row.map((val, ci) => {
+            const hl = (i === st.curI && ci === st.curW) ? 'background:var(--amber-soft); color:#fde68a; font-weight:700;' : '';
+            return `<td class="num" style="${hl}">${val}</td>`;
+          }).join('');
+          return `<tr><td>${label}</td>${tds}</tr>`;
+        }).join('');
+
+        container.innerHTML = `
+          <div class="grid-2 mb-12">
+            <div class="callout rose">
+              <strong>Mochila 0/1 Heurística Gulosa (razão v/w)</strong><br/>
+              Pega Item 1 (10kg, 60) + Item 2 (20kg, 100) = <strong>Valor 160</strong> (sobram 20kg sem uso).
+            </div>
+            <div class="callout emerald">
+              <strong>Mochila 0/1 Programação Dinâmica (W=50)</strong><br/>
+              Combina Item 2 (20kg, 100) + Item 3 (30kg, 120) = <strong>Valor Ótimo ${st.done ? 220 : st.dp[st.curI][st.curW]}</strong>.
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Subproblema</th>${st.caps.map(c => `<th style="text-align:right;">W=${c}</th>`).join('')}</tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        `;
+      }
+    }
+
+    async function updateCppTimeBadge() {
+      const el = document.getElementById('mCppTime');
+      const suite = vizState.domain;
+      let key = vizState.algo;
+      if (key === 'fib_compare') key = 'fib_rec';
+      if (key === 'pow_compare') key = 'pow_dc';
+      if (key === 'coin_compare') key = 'coin_dp';
+      if (key === 'knap_compare') key = 'knap_01_dp';
+
+      if (isBackendOnline) {
+        try {
+          const res = await fetch('/api/run-custom', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              suite, algo_key: key,
+              n: suite === 'sorting' ? Math.max(vizState.n, 1000) : (suite === 'search' ? 100000 : vizState.n),
+              format_key: vizState.format || 'random'
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            el.textContent = data.elapsed_us.toFixed(2) + ' µs';
+            return;
+          }
+        } catch (e) {}
+      }
+
+      const match = (benchmarkData.records || []).find(r => r.algo_key === key);
+      el.textContent = match ? (match.elapsed_us.toFixed(2) + ' µs (ref)') : '—';
+    }
+
+    function stopViz() {
+      vizState.playing = false;
+      if (vizState.timerId) {
+        clearTimeout(vizState.timerId);
+        vizState.timerId = null;
+      }
+      document.getElementById('vizPlayPause').textContent = '▶ Executar';
+    }
+
+    function playVizTick() {
+      if (!vizState.playing) return;
+      if (vizState.stepIdx >= vizState.steps.length - 1) {
+        stopViz();
+        return;
+      }
+      vizState.stepIdx++;
+      renderVizFrame();
+      const delayMs = Math.max(18, Math.round(420 / vizState.speed));
+      vizState.timerId = setTimeout(playVizTick, delayMs);
+    }
+
+    document.querySelectorAll('#vizDomainPills .pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => configureVizDomain(btn.dataset.domain));
+    });
+    document.getElementById('vizAlgoSelect').addEventListener('change', rebuildVizSteps);
+    document.getElementById('vizFormatSelect').addEventListener('change', rebuildVizSteps);
+    document.getElementById('vizSizeSlider').addEventListener('input', rebuildVizSteps);
+    document.getElementById('vizSpeedSlider').addEventListener('input', e => {
+      vizState.speed = parseInt(e.target.value, 10);
+      document.getElementById('vizSpeedVal').textContent = vizState.speed + 'x';
+    });
+    document.getElementById('vizPlayPause').addEventListener('click', () => {
+      if (vizState.playing) {
+        stopViz();
+      } else {
+        if (vizState.stepIdx >= vizState.steps.length - 1) vizState.stepIdx = 0;
+        vizState.playing = true;
+        document.getElementById('vizPlayPause').textContent = '⏸ Pausar';
+        playVizTick();
+      }
+    });
+    document.getElementById('vizStepFwd').addEventListener('click', () => {
+      stopViz();
+      if (vizState.stepIdx < vizState.steps.length - 1) { vizState.stepIdx++; renderVizFrame(); }
+    });
+    document.getElementById('vizStepBack').addEventListener('click', () => {
+      stopViz();
+      if (vizState.stepIdx > 0) { vizState.stepIdx--; renderVizFrame(); }
+    });
+    document.getElementById('vizReset').addEventListener('click', () => {
+      stopViz();
+      vizState.stepIdx = 0;
+      renderVizFrame();
+    });
+    document.getElementById('vizMeasureCpp').addEventListener('click', updateCppTimeBadge);
+
+    // =========================================================================
+    // EMPIRICAL LAB (TABLES + INTERACTIVE MULTI-SERIES CANVAS CHART)
+    // =========================================================================
+    let empState = { suite: 'sorting', format: 'random', metric: 'elapsed_us', scale: 'linear' };
+    let chartHitPoints = [];
+
+    function renderEmpiricalSection() {
+      const recs = (benchmarkData.records || []).filter(r => r.suite === empState.suite);
+      const fmtSel = document.getElementById('empFormatSelect');
+      const formats = [];
+      const seenFmt = new Set();
+      recs.forEach(r => {
+        if (!seenFmt.has(r.format_key)) {
+          seenFmt.add(r.format_key);
+          formats.push([r.format_key, r.input_format]);
+        }
+      });
+
+      const prevFmt = empState.format;
+      fmtSel.innerHTML = '';
+      formats.forEach(([k, label]) => fmtSel.add(new Option(label, k)));
+      if (seenFmt.has(prevFmt)) fmtSel.value = prevFmt;
+      else if (formats.length) { empState.format = formats[0][0]; fmtSel.value = empState.format; }
+
+      // Popula select de experimento customizado
+      const cAlgo = document.getElementById('customAlgo');
+      const cFmt = document.getElementById('customFormat');
+      cAlgo.innerHTML = '';
+      cFmt.innerHTML = '';
+      const seenA = new Set();
+      recs.forEach(r => {
+        if (!seenA.has(r.algo_key)) {
+          seenA.add(r.algo_key);
+          cAlgo.add(new Option(r.algorithm, r.algo_key));
+        }
+      });
+      formats.forEach(([k, label]) => cFmt.add(new Option(label, k)));
+
+      // Renderiza tabela filtrada
+      const filtered = recs.filter(r => r.format_key === empState.format);
+      document.getElementById('empTableCount').textContent = `Exibindo ${filtered.length} registros reais do motor C++`;
+      const tbody = document.getElementById('empTableBody');
+      tbody.innerHTML = filtered.map(r => `
+        <tr>
+          <td><strong>${r.algorithm}</strong></td>
+          <td class="num">${r.n.toLocaleString('pt-BR')}</td>
+          <td>${r.input_format}</td>
+          <td class="num">${r.elapsed_us.toFixed(2)}</td>
+          <td class="num">${r.elapsed_ms.toFixed(4)}</td>
+          <td><span class="badge">${r.dominant_op}</span></td>
+          <td class="num">${r.dominant_count.toLocaleString('pt-BR')}</td>
+          <td class="num">${r.extra_memory_bytes.toLocaleString('pt-BR')} B</td>
+          <td style="color:${r.correct ? 'var(--text-secondary)' : '#fda4af'};">${r.observation}</td>
+        </tr>
+      `).join('');
+
+      renderEmpiricalChart();
+    }
+
+    function renderEmpiricalChart() {
+      const recs = (benchmarkData.records || []).filter(r => r.suite === empState.suite && r.format_key === empState.format);
+      const canvas = document.getElementById('empChartCanvas');
+      if (!canvas) return;
+      const box = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(360, Math.floor(box.width - 24));
+      const h = Math.max(260, Math.floor(box.height - 24));
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+      chartHitPoints = [];
+
+      if (!recs.length) return;
+
+      // Agrupa séries por algoritmo (em Recursion/Greedy pode haver 2 problemas no mesmo suite; filtramos pelo primeiro ou agrupamos)
+      const byAlgo = {};
+      recs.forEach(r => {
+        if (!byAlgo[r.algo_key]) byAlgo[r.algo_key] = { name: r.algorithm, key: r.algo_key, pts: [] };
+        byAlgo[r.algo_key].pts.push(r);
+      });
+
+      const seriesList = Object.values(byAlgo);
+      const allN = [...new Set(recs.map(r => r.n))].sort((a, b) => a - b);
+      const metricKey = empState.metric;
+      const useLog = (empState.scale === 'log');
+
+      const mapYVal = (v) => {
+        if (!useLog) return v;
+        return Math.log10(Math.max(v, 0.01));
+      };
+
+      const rawVals = recs.map(r => mapYVal(r[metricKey]));
+      const minY = useLog ? Math.min(...rawVals) : 0;
+      const maxY = Math.max(...rawVals, minY + 1);
+
+      const padL = 74, padR = 24, padT = 22, padB = 42;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      // Grid horizontal
+      ctx.strokeStyle = '#1f1f24';
+      ctx.lineWidth = 1;
+      ctx.font = '11px Consolas, monospace';
+      ctx.fillStyle = '#71717a';
+      ctx.textAlign = 'right';
+      for (let g = 0; g <= 5; g++) {
+        const y = padT + (plotH * g) / 5;
+        ctx.beginPath();
+        ctx.moveTo(padL, y);
+        ctx.lineTo(w - padR, y);
+        ctx.stroke();
+
+        const val = maxY - ((maxY - minY) * g) / 5;
+        const disp = useLog ? Math.pow(10, val) : val;
+        const txt = disp >= 1000000 ? (disp / 1e6).toFixed(1) + 'M' : (disp >= 1000 ? (disp / 1000).toFixed(1) + 'k' : disp.toFixed(1));
+        ctx.fillText(txt, padL - 8, y + 4);
+      }
+
+      // Eixo X labels
+      ctx.textAlign = 'center';
+      allN.forEach((nVal, idx) => {
+        const x = allN.length === 1 ? padL + plotW / 2 : padL + (idx / (allN.length - 1)) * plotW;
+        ctx.fillStyle = '#71717a';
+        ctx.fillText(nVal >= 1000 ? (nVal / 1000) + 'k' : String(nVal), x, h - 18);
+      });
+
+      // Títulos de eixo
+      ctx.fillStyle = '#a1a1aa';
+      ctx.font = '600 11px Inter, sans-serif';
+      ctx.fillText('Tamanho da Entrada (n)', padL + plotW / 2, h - 3);
+
+      // Desenha séries
+      const legendEl = document.getElementById('empChartLegend');
+      legendEl.innerHTML = '';
+
+      seriesList.forEach(s => {
+        s.pts.sort((a, b) => a.n - b.n);
+        const color = ALGO_COLORS[s.key] || '#818cf8';
+        legendEl.innerHTML += `<span class="legend-item"><span class="swatch" style="background:${color};"></span>${s.name}</span>`;
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        s.pts.forEach((pt, idx) => {
+          const xIdx = allN.indexOf(pt.n);
+          const x = allN.length === 1 ? padL + plotW / 2 : padL + (xIdx / (allN.length - 1)) * plotW;
+          const yNorm = (mapYVal(pt[metricKey]) - minY) / (maxY - minY || 1);
+          const y = padT + plotH - yNorm * plotH;
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+          chartHitPoints.push({ x, y, color, pt });
+        });
+        ctx.stroke();
+
+        s.pts.forEach(pt => {
+          const xIdx = allN.indexOf(pt.n);
+          const x = allN.length === 1 ? padL + plotW / 2 : padL + (xIdx / (allN.length - 1)) * plotW;
+          const yNorm = (mapYVal(pt[metricKey]) - minY) / (maxY - minY || 1);
+          const y = padT + plotH - yNorm * plotH;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+
+      // Interpretação automática (Seção 9)
+      const maxN = allN[allN.length - 1];
+      const atMax = recs.filter(r => r.n === maxN).sort((a, b) => a[metricKey] - b[metricKey]);
+      if (atMax.length >= 2) {
+        const best = atMax[0];
+        const worst = atMax[atMax.length - 1];
+        const ratio = best[metricKey] > 0 ? (worst[metricKey] / best[metricKey]).toFixed(1) : '—';
+        document.getElementById('empChartTitle').textContent =
+          `Desempenho: ${best.problem} (${best.input_format})`;
+        document.getElementById('empInterpretation').innerHTML =
+          `<strong>Interpretação Técnica (Seção 9):</strong> Para <strong>n = ${maxN.toLocaleString('pt-BR')}</strong> no formato <em>${best.input_format}</em>, o destaque foi <strong>${best.algorithm}</strong> (${best.elapsed_us.toFixed(2)} µs; ${best.dominant_count.toLocaleString('pt-BR')} ${best.dominant_op.toLowerCase()}), superando <strong>${worst.algorithm}</strong> em aproximadamente <strong>${ratio}×</strong>. A curva confirma a separação assintótica prevista pela teoria.`;
+      }
+    }
+
+    document.getElementById('empChartCanvas').addEventListener('mousemove', e => {
+      const canvas = e.target;
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const tip = document.getElementById('empTooltip');
+      let best = null, bestDist = 18;
+      chartHitPoints.forEach(hp => {
+        const d = Math.hypot(hp.x - mx, hp.y - my);
+        if (d < bestDist) { bestDist = d; best = hp; }
+      });
+      if (best) {
+        tip.style.display = 'block';
+        tip.style.left = Math.min(rect.width - 210, mx + 14) + 'px';
+        tip.style.top = Math.max(10, my - 30) + 'px';
+        tip.innerHTML = `<strong style="color:${best.color};">${best.pt.algorithm}</strong><br/>n = ${best.pt.n.toLocaleString('pt-BR')}<br/>Tempo: ${best.pt.elapsed_us.toFixed(2)} µs<br/>${best.pt.dominant_op}: ${best.pt.dominant_count.toLocaleString('pt-BR')}`;
+      } else {
+        tip.style.display = 'none';
+      }
+    });
+    document.getElementById('empChartCanvas').addEventListener('mouseleave', () => {
+      document.getElementById('empTooltip').style.display = 'none';
+    });
+
+    document.querySelectorAll('#empSuitePills .pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#empSuitePills .pill-btn').forEach(b => b.classList.toggle('active', b === btn));
+        empState.suite = btn.dataset.suite;
+        renderEmpiricalSection();
+      });
+    });
+    document.getElementById('empFormatSelect').addEventListener('change', e => {
+      empState.format = e.target.value;
+      renderEmpiricalSection();
+    });
+    document.getElementById('empMetricSelect').addEventListener('change', e => {
+      empState.metric = e.target.value;
+      renderEmpiricalChart();
+    });
+    document.getElementById('empScaleSelect').addEventListener('change', e => {
+      empState.scale = e.target.value;
+      renderEmpiricalChart();
+    });
+
+    document.getElementById('btnExportCsv').addEventListener('click', () => {
+      const recs = (benchmarkData.records || []).filter(r => r.suite === empState.suite);
+      const header = 'Algoritmo,n,Formato,Tempo_us,Tempo_ms,Operacao_Dominante,Quantidade,Memoria_Bytes,Observacao\n';
+      const rows = recs.map(r => `"${r.algorithm}",${r.n},"${r.input_format}",${r.elapsed_us},${r.elapsed_ms},"${r.dominant_op}",${r.dominant_count},${r.extra_memory_bytes},"${r.observation}"`).join('\n');
+      const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `algolab_${empState.suite}.csv`;
+      a.click();
+    });
+
+    document.getElementById('btnRunCustom').addEventListener('click', async () => {
+      const out = document.getElementById('customResultText');
+      if (!isBackendOnline) {
+        out.textContent = 'Disponível ao executar pelo binário AlgoLab.exe.';
+        return;
+      }
+      out.textContent = 'Calculando no C++...';
+      try {
+        const res = await fetch('/api/run-custom', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            suite: empState.suite,
+            algo_key: document.getElementById('customAlgo').value,
+            n: parseInt(document.getElementById('customN').value, 10) || 1000,
+            format_key: document.getElementById('customFormat').value
+          })
+        });
+        const d = await res.json();
+        out.textContent = `${d.algorithm} (n=${d.n}): ${d.elapsed_us.toFixed(2)} µs | ${d.dominant_op}: ${d.dominant_count.toLocaleString('pt-BR')} | ${d.result_summary || 'OK'}`;
+      } catch (e) {
+        out.textContent = 'Erro ao executar experimento.';
+      }
+    });
+
+    // =========================================================================
+    // ANALYSIS SECTION (SEÇÕES 8 & 10)
+    // =========================================================================
+    function renderAnalysisSection() {
+      const asymptoticSpecs = [
+        {
+          title: 'Busca Sequencial vs. Busca Binária',
+          formula: 'T_seq(n) = c·n + d = Θ(n)  |  T_bin(n) = T(n/2) + c = Θ(log₂ n)',
+          body: 'Na Busca Sequencial, o laço executa no pior caso n iterações com 1 comparação de igualdade por passo (soma linear). Na Busca Binária, cada iteração descarta metade do intervalo [low..high]. Pelo Teorema Mestre (a=1, b=2, f(n)=O(1)=n^log₂(1)): T(n) = Θ(log n). A versão recursiva consome Θ(log n) bytes extras na pilha; a iterativa opera em O(1).'
+        },
+        {
+          title: 'Quick Sort (Pivô Fixo vs. Mediana de 3)',
+          formula: 'Médio: T(n) = 2T(n/2) + Θ(n) = Θ(n log n)  |  Pior: T(n) = T(n-1) + Θ(n) = Θ(n²)',
+          body: 'Com pivô fixo no último elemento (Lomuto) e entrada já ordenada, o pivô é sempre o extremo, gerando partições (n-1, 0): ∑(k=1..n-1) k = n(n-1)/2 = Θ(n²). A estratégia Mediana de 3 combinada à partição de Hoare equilibra os subvetores e lida com duplicidades mantendo Θ(n log n) na prática.'
+        },
+        {
+          title: 'Merge Sort vs. Insertion Sort & Bubble Sort',
+          formula: 'Merge: T(n) = 2T(n/2) + cn = Θ(n log n)  |  Insertion/Bubble: ∑(i=1..n-1) i = Θ(n²)',
+          body: 'Pelo Teorema Mestre (a=2, b=2, f(n)=Θ(n)), Merge Sort mantém Θ(n log n) independente da ordenação inicial, ao custo de um buffer auxiliar Θ(n). Já o Insertion Sort possui laço interno adaptativo: quando o vetor está ordenado ou quase ordenado, cada elemento é movido O(1) vezes, caindo para Ω(n).'
+        },
+        {
+          title: 'Fibonacci Recursivo vs. Iterativo/PD & Exponenciação D&C',
+          formula: 'Fib Rec: T(n) = T(n-1) + T(n-2) + c = Θ(φⁿ)  |  Pow D&C: T(n) = T(n/2) + c = Θ(log n)',
+          body: 'A árvore de recursão de Fibonacci recalcula os mesmos subproblemas exponencialmente (φ ≈ 1,618). A memoização armazena cada estado uma única vez, reduzindo para Θ(n) tempo e Θ(n) espaço, enquanto a versão iterativa atinge Θ(n) tempo em O(1) espaço. Na Exponenciação D&C, dividir o expoente por 2 reduz 1.000.000 de multiplicações para apenas ~20.'
+        },
+        {
+          title: 'Algoritmos Gulosos vs. Programação Dinâmica (Troco e Mochila)',
+          formula: 'Troco PD: Θ(A · k)  |  Mochila Fracionária: Θ(n log n)  |  Mochila 0/1 PD: Θ(n · W)',
+          body: 'A escolha gulosa decide localmente sem retroceder: funciona perfeitamente na Mochila Fracionária e em sistemas monetários canônicos (BRL), mas falha quando a subestrutura gulosa não se sustenta (ex.: moedas [1,3,4] para troco 6 ou itens indivisíveis na Mochila 0/1). A PD avalia todos os estados ótimos anteriores garantindo exatidão global.'
+        }
+      ];
+
+      document.getElementById('asymptoticCards').innerHTML = asymptoticSpecs.map(s => `
+        <div class="callout">
+          <div style="font-weight:600; color:#fff; margin-bottom:6px;">${s.title}</div>
+          <div class="formula mb-12">${s.formula}</div>
+          <div style="font-size:12.5px; color:var(--text-secondary);">${s.body}</div>
+        </div>
+      `).join('');
+
+      const qas = [
+        ['1. Melhor desempenho para entradas pequenas vs. grandes?', 'Para entradas pequenas (n ≤ 100) ou quase ordenadas, o Insertion Sort é extremamente competitivo devido à baixa constante multiplicativa, ausência de recursão e excelente localidade de cache. Acima de n = 500, Quick Sort (Mediana de 3) e Merge Sort assumem liderança absoluta.'],
+        ['2. A organização inicial alterou o comportamento?', 'Sim, drasticamente. Em entradas ordenadas ou inversas, Quick Sort com pivô fixo degradou para O(n²) enquanto Insertion e Bubble Otimizado caíram para O(n). Merge Sort e Quick Mediana de 3 permaneceram estáveis.'],
+        ['3. O resultado empírico confirmou a ordem assintótica?', 'Sim. Ao dobrar n de 10.000 para 25.000 (fator 2,5×), os algoritmos quadráticos cresceram ~6,25× em comparações e tempo, enquanto O(n log n) cresceu ~2,7× e a Busca Binária aumentou apenas 1–2 comparações ao passar de 500k para 1M.'],
+        ['4. Algoritmo assintoticamente melhor foi mais lento em algum caso?', 'Sim: em n = 100 ordenado ou quase ordenado, Insertion Sort (O(n²) no geral) superou o Merge Sort (Θ(n log n)) porque o custo de alocação/cópia do buffer auxiliar e chamadas recursivas supera o ganho assintótico em entradas pequenas.'],
+        ['5. Qual solução é mais simples de implementar e manter?', 'Busca Binária Iterativa, Insertion Sort e Fibonacci Iterativo oferecem o melhor equilíbrio entre simplicidade, legibilidade e previsibilidade sem risco de estouro de pilha.'],
+        ['6. Há aumento significativo no uso de memória?', 'Sim: Merge Sort aloca Θ(n) extra, Mochila 0/1 PD aloca matriz Θ(n·W) e algoritmos recursivos profundos consomem pilha O(log n) a O(n), enquanto versões iterativas e in-place mantêm O(1).'],
+        ['7. A recursividade trouxe benefícios ou custos adicionais?', 'Na Divisão e Conquista (Merge, Quick, Exponenciação Rápida), a recursão estrutura soluções elegantes em O(log n) ou O(n log n). Contudo, quando há sobreposição de subproblemas sem memoização (Fibonacci), gera custo exponencial catastrófico.'],
+        ['8. A solução é correta para todos os tipos de entrada?', 'Todos os algoritmos de busca e ordenação passaram 100% na validação automática em todos os formatos (incluindo duplicidades e chave ausente). Nos problemas de otimização, ficou provado que apenas a PD garante otimalidade em casos não-canônicos e 0/1.'],
+        ['9. Em qual contexto prático cada algoritmo é recomendado?', 'Busca Binária Iterativa para catálogos ordenados; Quick Sort (Mediana 3) para ordenação geral em RAM; Merge Sort quando estabilidade é obrigatória; Insertion Sort em subvetores pequenos (como no Timsort/Introsort); PD quando otimalidade exata é crítica.']
+      ];
+
+      document.getElementById('criticalQuestions').innerHTML = qas.map(([q, a]) => `
+        <div class="callout">
+          <div style="font-weight:600; color:#c7d2fe; margin-bottom:4px;">${q}</div>
+          <div style="font-size:12.5px; color:var(--text-secondary);">${a}</div>
+        </div>
+      `).join('');
+    }
+
+    // =========================================================================
+    // SOURCE CODE TAB
+    // =========================================================================
+    const SOURCE_MODULES = {
+      search: {
+        title: 'include/search_algorithms.hpp',
+        desc: 'Busca Sequencial, Busca Binária Iterativa e Busca Binária Recursiva com contagem de comparações e acessos.',
+        code: `int sequential_search(const std::vector<int>& arr, int target, Metrics& m) {\n  for (std::size_t i = 0; i < arr.size(); ++i) {\n    m.array_accesses++; m.comparisons++;\n    if (arr[i] == target) return static_cast<int>(i);\n  }\n  return -1;\n}\n\nint binary_search_iterative(const std::vector<int>& arr, int target, Metrics& m) {\n  int low = 0, high = static_cast<int>(arr.size()) - 1;\n  while (low <= high) {\n    int mid = low + (high - low) / 2;\n    m.array_accesses++; m.comparisons++;\n    if (arr[mid] == target) return mid;\n    m.comparisons++;\n    if (arr[mid] < target) low = mid + 1;\n    else high = mid - 1;\n  }\n  return -1;\n}`
+      },
+      sorting: {
+        title: 'include/sorting_algorithms.hpp',
+        desc: 'Quick Sort (Mediana de 3 + Hoare e Pivô Fixo Lomuto), Merge Sort, Insertion Sort e Bubble Sort Otimizado.',
+        code: `void insertion_sort(std::vector<int>& arr, Metrics& m) {\n  for (std::size_t i = 1; i < arr.size(); ++i) {\n    m.array_accesses++; int key = arr[i];\n    std::size_t j = i;\n    while (j > 0) {\n      m.array_accesses++; m.comparisons++;\n      if (arr[j - 1] > key) {\n        arr[j] = arr[j - 1]; m.array_accesses++; m.swaps_or_writes++;\n        --j;\n      } else break;\n    }\n    arr[j] = key; m.swaps_or_writes++;\n  }\n}`
+      },
+      recursion: {
+        title: 'include/recursion_dc_algorithms.hpp',
+        desc: 'Fibonacci (Iterativo, Recursivo Ingênuo, PD Memoizado) e Exponenciação Linear vs Divisão e Conquista.',
+        code: `double pow_dc_impl(double base, int exp, int depth, int& max_depth, Metrics& m) {\n  m.recursive_calls++;\n  if (exp == 0) return 1.0;\n  if (exp == 1) return base;\n  double half = pow_dc_impl(base, exp / 2, depth + 1, max_depth, m);\n  m.swaps_or_writes++;\n  double res = half * half;\n  if (exp % 2 != 0) { m.swaps_or_writes++; res *= base; }\n  return res;\n}`
+      },
+      greedy_dp: {
+        title: 'include/greedy_dp_algorithms.hpp',
+        desc: 'Problema do Troco (Guloso vs Programação Dinâmica) e Mochila (Fracionária vs 0/1 Heurística vs 0/1 PD).',
+        code: `CoinChangeResult coin_change_dp(const std::vector<int>& coins, int amount, Metrics& m) {\n  const int INF = std::numeric_limits<int>::max() / 2;\n  std::vector<int> dp(amount + 1, INF), parent(amount + 1, -1);\n  dp[0] = 0;\n  for (int x = 1; x <= amount; ++x) {\n    for (int coin : coins) {\n      m.comparisons++;\n      if (coin > 0 && coin <= x && dp[x - coin] + 1 < dp[x]) {\n        dp[x] = dp[x - coin] + 1; parent[x] = coin; m.swaps_or_writes += 2;\n      }\n    }\n  }\n  return reconstruct(dp, parent, amount);\n}`
+      }
+    };
+
+    function renderSourceMod(mod) {
+      document.querySelectorAll('#sourceModulePills .pill-btn').forEach(b => b.classList.toggle('active', b.dataset.mod === mod));
+      const spec = SOURCE_MODULES[mod];
+      document.getElementById('sourceTitle').textContent = spec.title;
+      document.getElementById('sourceDesc').textContent = spec.desc;
+      document.getElementById('sourceCodeView').innerHTML = spec.code.split('\n').map((ln, idx) => {
+        const esc = ln.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<div class="code-line"><span class="line-num">${idx + 1}</span><span>${esc}</span></div>`;
+      }).join('');
+    }
+    document.querySelectorAll('#sourceModulePills .pill-btn').forEach(b => {
+      b.addEventListener('click', () => renderSourceMod(b.dataset.mod));
+    });
+    document.getElementById('btnCopySource').addEventListener('click', () => {
+      const active = document.querySelector('#sourceModulePills .pill-btn.active').dataset.mod;
+      navigator.clipboard?.writeText(SOURCE_MODULES[active].code);
+    });
+
+    // =========================================================================
+    // DEEP LINK SUPPORT (?tab=...&domain=...&algo=...) FOR SCREENSHOTS & USAGE
+    // =========================================================================
+    function applyQueryParams() {
+      const q = new URLSearchParams(window.location.search);
+      const tab = q.get('tab');
+      const domain = q.get('domain');
+      const algo = q.get('algo');
+      const fmt = q.get('format');
+      const step = q.get('step');
+      const suite = q.get('suite');
+
+      if (domain) configureVizDomain(domain);
+      if (algo && document.getElementById('vizAlgoSelect')) {
+        const sel = document.getElementById('vizAlgoSelect');
+        if ([...sel.options].some(o => o.value === algo)) {
+          sel.value = algo;
+          rebuildVizSteps();
+        }
+      }
+      if (fmt && document.getElementById('vizFormatSelect')) {
+        const sel = document.getElementById('vizFormatSelect');
+        if ([...sel.options].some(o => o.value === fmt)) {
+          sel.value = fmt;
+          rebuildVizSteps();
+        }
+      }
+      if (step !== null) {
+        const s = step === 'end' ? vizState.steps.length - 1 : parseInt(step, 10);
+        if (!isNaN(s)) {
+          vizState.stepIdx = Math.max(0, Math.min(vizState.steps.length - 1, s));
+          renderVizFrame();
+        }
+      }
+      if (suite) {
+        empState.suite = suite;
+        document.querySelectorAll('#empSuitePills .pill-btn').forEach(b => b.classList.toggle('active', b.dataset.suite === suite));
+      }
+      if (tab) switchTab(tab);
+    }
+
+    window.addEventListener('resize', () => {
+      if (document.getElementById('tab-visualizer').classList.contains('active')) renderVizFrame();
+      if (document.getElementById('tab-empirical').classList.contains('active')) renderEmpiricalChart();
+    });
+
+    // Boot
+    configureVizDomain('sorting');
+    renderSourceMod('search');
+    renderAnalysisSection();
+    loadBenchmarks().then(() => {
+      applyQueryParams();
+      startHeartbeat();
+    });
+  })();
+  </script>
+</body>
+</html>

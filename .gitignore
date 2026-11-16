@@ -1,0 +1,13 @@
+# Build temporários e caches
+*.o
+*.obj
+*.ilk
+*.pdb
+*.tmp
+*.log
+__pycache__/
+*.pyc
+.pytest_cache/
+scripts/_tmp_*
+.DS_Store
+Thumbs.db

@@ -1,0 +1,53 @@
+name: Build and Release AlgoLab.exe
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup MinGW C++20 Toolchain
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: false
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+
+      - name: Build static AlgoLab.exe
+        shell: msys2 {0}
+        run: |
+          mkdir -p dist
+          python scripts/embed_assets.py
+          g++ -std=c++20 -O3 -Wall -Wextra -Iinclude \
+            src/main.cpp src/benchmark_runner.cpp \
+            -o dist/AlgoLab.exe \
+            -static -static-libgcc -static-libstdc++ \
+            -lws2_32 -lshell32 -luser32
+
+      - name: Smoke Test AlgoLab CLI
+        shell: powershell
+        run: |
+          .\dist\AlgoLab.exe --cli --benchmark-json data\benchmark_results.json
+
+      - name: Upload Release Asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/AlgoLab.exe
