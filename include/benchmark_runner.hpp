@@ -39,7 +39,7 @@ struct BenchmarkSuiteResult {
 /**
  * @brief Executa toda a bateria de experimentos empíricos no motor C++.
  */
-BenchmarkSuiteResult run_all_benchmarks(bool print_progress = false);
+BenchmarkSuiteResult run_all_benchmarks(bool print_progress = false, bool fast_interactive = false);
 
 /**
  * @brief Serializa todos os resultados empíricos em JSON estruturado.

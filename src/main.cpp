@@ -32,6 +32,9 @@ std::mutex g_state_mutex;
 std::string g_cached_json;
 std::atomic<bool> g_running{true};
 std::atomic<bool> g_client_seen{false};
+std::atomic<bool> g_benchmark_busy{false};
+std::atomic<bool> g_shutdown_requested{false};
+std::atomic<long long> g_shutdown_req_ms{0};
 std::atomic<long long> g_last_heartbeat_ms{0};
 
 long long now_ms() {
@@ -103,6 +106,9 @@ void send_http_response(SOCKET client, const std::string& status,
     hdr << "HTTP/1.1 " << status << "\r\n"
         << "Content-Type: " << content_type << "\r\n"
         << "Content-Length: " << len << "\r\n"
+        << "Access-Control-Allow-Origin: *\r\n"
+        << "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
+        << "Access-Control-Allow-Headers: Content-Type\r\n"
         << "Cache-Control: no-store\r\n"
         << "Connection: close\r\n\r\n";
     std::string h = hdr.str();
@@ -115,7 +121,17 @@ void send_http_response(SOCKET client, const std::string& status,
     }
 }
 
+std::string to_lower_ascii(std::string s) {
+    for (char& c : s) {
+        if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
+    }
+    return s;
+}
+
 void handle_client(SOCKET client) {
+    DWORD rcv_timeout = 5000;
+    setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&rcv_timeout), sizeof(rcv_timeout));
+
     std::string raw;
     char buf[4096];
     int received = 0;
@@ -127,13 +143,12 @@ void handle_client(SOCKET client) {
         if (header_end == std::string::npos) {
             header_end = raw.find("\r\n\r\n");
             if (header_end != std::string::npos) {
-                std::string headers = raw.substr(0, header_end);
-                std::size_t cl_pos = headers.find("Content-Length:");
-                if (cl_pos == std::string::npos) cl_pos = headers.find("content-length:");
+                std::string headers_lower = to_lower_ascii(raw.substr(0, header_end));
+                std::size_t cl_pos = headers_lower.find("content-length:");
                 if (cl_pos != std::string::npos) {
-                    std::size_t num_start = headers.find_first_of("0123456789", cl_pos);
+                    std::size_t num_start = headers_lower.find_first_of("0123456789", cl_pos);
                     if (num_start != std::string::npos) {
-                        content_length = static_cast<std::size_t>(std::stoull(headers.substr(num_start)));
+                        content_length = static_cast<std::size_t>(std::stoull(headers_lower.substr(num_start)));
                     }
                 }
             }
@@ -164,9 +179,19 @@ void handle_client(SOCKET client) {
                            ? raw.substr(header_end + 4)
                            : "";
 
-    if (method == "GET" && (path == "/" || path == "/index.html")) {
+    if (method == "OPTIONS") {
+        send_http_response(client, "204 No Content", "text/plain", "", 0);
+        closesocket(client);
+        return;
+    }
+
+    if (path != "/api/shutdown") {
         g_client_seen = true;
+        g_shutdown_requested = false;
         g_last_heartbeat_ms = now_ms();
+    }
+
+    if (method == "GET" && (path == "/" || path == "/index.html")) {
         send_http_response(client, "200 OK", "text/html; charset=utf-8",
                            reinterpret_cast<const char*>(algolab::assets::kEmbeddedHtmlBytes),
                            algolab::assets::kEmbeddedHtmlLen);
@@ -179,30 +204,43 @@ void handle_client(SOCKET client) {
         }
         send_http_response(client, "200 OK", "application/json; charset=utf-8", payload.data(), payload.size());
     } else if (method == "POST" && path == "/api/rebenchmark") {
-        auto suite = algolab::run_all_benchmarks(false);
+        struct BusyGuard {
+            std::atomic<bool>& flag;
+            explicit BusyGuard(std::atomic<bool>& f) : flag(f) { flag = true; }
+            ~BusyGuard() { flag = false; }
+        } guard(g_benchmark_busy);
+
+        auto suite = algolab::run_all_benchmarks(false, true);
         std::string payload = algolab::serialize_benchmarks_to_json(suite);
         {
             std::lock_guard<std::mutex> lock(g_state_mutex);
             g_cached_json = payload;
         }
+        g_last_heartbeat_ms = now_ms();
         send_http_response(client, "200 OK", "application/json; charset=utf-8", payload.data(), payload.size());
     } else if (method == "POST" && path == "/api/run-custom") {
+        struct BusyGuard {
+            std::atomic<bool>& flag;
+            explicit BusyGuard(std::atomic<bool>& f) : flag(f) { flag = true; }
+            ~BusyGuard() { flag = false; }
+        } guard(g_benchmark_busy);
+
         std::string suite = extract_json_string(body, "suite", "sorting");
         std::string algo = extract_json_string(body, "algo_key", "quick_median3");
         std::string fmt = extract_json_string(body, "format_key", "random");
         std::string extra = extract_json_string(body, "extra_param", "");
         std::size_t n = extract_json_size(body, "n", 1000);
         std::string payload = algolab::run_single_experiment_json(suite, algo, n, fmt, extra);
+        g_last_heartbeat_ms = now_ms();
         send_http_response(client, "200 OK", "application/json; charset=utf-8", payload.data(), payload.size());
     } else if (method == "POST" && path == "/api/heartbeat") {
-        g_client_seen = true;
-        g_last_heartbeat_ms = now_ms();
         const char ok[] = "{\"ok\":true}";
         send_http_response(client, "200 OK", "application/json", ok, sizeof(ok) - 1);
     } else if (method == "POST" && path == "/api/shutdown") {
         const char ok[] = "{\"closing\":true}";
         send_http_response(client, "200 OK", "application/json", ok, sizeof(ok) - 1);
-        g_running = false;
+        g_shutdown_req_ms = now_ms();
+        g_shutdown_requested = true;
     } else {
         const char not_found[] = "Not Found";
         send_http_response(client, "404 Not Found", "text/plain", not_found, sizeof(not_found) - 1);
@@ -322,16 +360,19 @@ int run_server(int requested_port, bool launch_ui, bool auto_exit_on_idle) {
 
     while (g_running) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        if (auto_exit_on_idle) {
-            long long now = now_ms();
-            if (g_client_seen) {
-                // Encerra após 12s sem heartbeat (permite refresh F5 tranquilo, mas fecha ao fechar janela)
-                if (now - g_last_heartbeat_ms.load() > 12000) {
-                    g_running = false;
-                }
-            } else if (now - start_time > 45000) {
+        if (!auto_exit_on_idle || g_benchmark_busy.load()) {
+            continue;
+        }
+        long long now = now_ms();
+        bool edge_exited = !has_edge_proc || (WaitForSingleObject(pi.hProcess, 0) == WAIT_OBJECT_0);
+        if (g_shutdown_requested.load() && (now - g_shutdown_req_ms.load() > 4000)) {
+            g_running = false;
+        } else if (g_client_seen.load()) {
+            if (edge_exited && (now - g_last_heartbeat_ms.load() > 600000)) {
                 g_running = false;
             }
+        } else if (now - start_time > 120000) {
+            g_running = false;
         }
     }
 

@@ -91,7 +91,8 @@ ExperimentRecord benchmark_sort(const std::string& algo_name,
                                 InputFormat fmt,
                                 const std::vector<int>& base,
                                 SortFn&& sort_fn,
-                                const std::string& obs_note) {
+                                const std::string& obs_note,
+                                bool fast_interactive = false) {
     ExperimentRecord rec;
     rec.suite = "sorting";
     rec.problem = "Ordenação de Vetor";
@@ -101,10 +102,17 @@ ExperimentRecord benchmark_sort(const std::string& algo_name,
     rec.input_format = input_format_label(fmt);
     rec.format_key = input_format_key(fmt);
 
+    using clock = std::chrono::high_resolution_clock;
+
     // 1 execução instrumentada para contagem exata das operações primitivas
     Metrics m;
     std::vector<int> instrumented = base;
+    auto t0 = clock::now();
     sort_fn(instrumented, m);
+    auto t1 = clock::now();
+    if (!instrumented.empty()) {
+        g_benchmark_sink ^= static_cast<std::uint64_t>(instrumented.front()) ^ static_cast<std::uint64_t>(instrumented.back());
+    }
     rec.comparisons = m.comparisons;
     rec.swaps_or_writes = m.swaps_or_writes;
     rec.array_accesses = m.array_accesses;
@@ -115,16 +123,24 @@ ExperimentRecord benchmark_sort(const std::string& algo_name,
     rec.correct = m.correct;
     rec.result_summary = m.correct ? "Ordenado corretamente" : "ERRO de ordenação";
 
+    if (fast_interactive && n >= 10000) {
+        double total_ns = std::chrono::duration<double, std::nano>(t1 - t0).count();
+        rec.elapsed_us = total_ns / 1000.0;
+        rec.elapsed_ms = rec.elapsed_us / 1000.0;
+        rec.observation = obs_note;
+        return rec;
+    }
+
     // Múltiplas execuções com vetores pré-copiados fora do cronômetro
     int reps = 3;
-    if (n <= 100) reps = 50;
-    else if (n <= 500) reps = 20;
-    else if (n <= 1000) reps = 10;
-    else if (n <= 5000) reps = 5;
+    if (n <= 100) reps = fast_interactive ? 15 : 50;
+    else if (n <= 500) reps = fast_interactive ? 8 : 20;
+    else if (n <= 1000) reps = fast_interactive ? 5 : 10;
+    else if (n <= 5000) reps = fast_interactive ? 2 : 5;
+    else if (fast_interactive) reps = 1;
 
     std::vector<std::vector<int>> copies(static_cast<std::size_t>(reps), base);
     Metrics dummy;
-    using clock = std::chrono::high_resolution_clock;
     auto start = clock::now();
     for (int r = 0; r < reps; ++r) {
         sort_fn(copies[static_cast<std::size_t>(r)], dummy);
@@ -196,7 +212,7 @@ std::vector<KnapsackItem> generate_knapsack_items(std::size_t n, std::uint32_t s
 
 }  // namespace
 
-BenchmarkSuiteResult run_all_benchmarks(bool print_progress) {
+BenchmarkSuiteResult run_all_benchmarks(bool print_progress, bool fast_interactive) {
     BenchmarkSuiteResult suite;
     suite.generated_at = current_iso_timestamp();
     suite.compiler_info = detect_compiler_info();
@@ -240,30 +256,30 @@ BenchmarkSuiteResult run_all_benchmarks(bool print_progress) {
 
             suite.records.push_back(benchmark_sort(
                 "Quick Sort (Mediana de 3)", "quick_median3", n, fmt, base, quick_sort_median3,
-                "Hoare + Mediana de 3 evita degradação O(n^2)"));
+                "Hoare + Mediana de 3 evita degradação O(n^2)", fast_interactive));
 
             suite.records.push_back(benchmark_sort(
                 "Quick Sort (Pivô Fixo)", "quick_fixed", n, fmt, base, quick_sort_fixed_pivot,
                 (fmt == InputFormat::SORTED_ASC || fmt == InputFormat::SORTED_DESC ||
                  fmt == InputFormat::MANY_DUPLICATES)
                     ? "Pior caso O(n^2) por partição desbalanceada"
-                    : "Caso médio O(n log n) com pivô no fim"));
+                    : "Caso médio O(n log n) com pivô no fim", fast_interactive));
 
             suite.records.push_back(benchmark_sort(
                 "Merge Sort", "merge_sort", n, fmt, base, merge_sort,
-                "Theta(n log n) garantido; requer buffer auxiliar O(n)"));
+                "Theta(n log n) garantido; requer buffer auxiliar O(n)", fast_interactive));
 
             suite.records.push_back(benchmark_sort(
                 "Insertion Sort", "insertion_sort", n, fmt, base, insertion_sort,
                 (fmt == InputFormat::SORTED_ASC || fmt == InputFormat::NEARLY_SORTED)
                     ? "Adaptativo: quase linear O(n) em vetores ordenados"
-                    : "Custo quadrático O(n^2) em entradas inversas/aleatórias"));
+                    : "Custo quadrático O(n^2) em entradas inversas/aleatórias", fast_interactive));
 
             suite.records.push_back(benchmark_sort(
                 "Bubble Sort Otimizado", "bubble_sort", n, fmt, base, bubble_sort_optimized,
                 (fmt == InputFormat::SORTED_ASC)
                     ? "Flag de parada antecipada encerra em O(n)"
-                    : "Alto número de trocas e comparações O(n^2)"));
+                    : "Alto número de trocas e comparações O(n^2)", fast_interactive));
         }
     }
 
@@ -329,12 +345,20 @@ BenchmarkSuiteResult run_all_benchmarks(bool print_progress) {
         }
         {
             Metrics m;
+            auto f0 = std::chrono::high_resolution_clock::now();
             std::uint64_t val = fibonacci_recursive(n, m);
-            int reps = (n <= 20) ? 200 : (n <= 30 ? 20 : (n <= 35 ? 3 : 1));
-            double us = measure_avg_us(reps, [&]() {
-                Metrics d;
-                g_benchmark_sink ^= fibonacci_recursive(n, d);
-            });
+            auto f1 = std::chrono::high_resolution_clock::now();
+            g_benchmark_sink ^= val;
+            double us = 0.0;
+            if (fast_interactive && n >= 35) {
+                us = std::chrono::duration<double, std::nano>(f1 - f0).count() / 1000.0;
+            } else {
+                int reps = (n <= 20) ? 200 : (n <= 30 ? 20 : (n <= 35 ? 3 : 1));
+                us = measure_avg_us(reps, [&]() {
+                    Metrics d;
+                    g_benchmark_sink ^= fibonacci_recursive(n, d);
+                });
+            }
             ExperimentRecord r;
             r.suite = "recursion";
             r.problem = "Fibonacci (Iterativo vs Recursivo vs PD)";

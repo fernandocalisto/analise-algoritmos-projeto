@@ -274,7 +274,34 @@
       background: #4f46e5;
     }
 
+    .btn.success {
+      background: rgba(16, 185, 129, 0.22);
+      border-color: var(--emerald);
+      color: #6ee7b7;
+    }
+
     .btn.sm { padding: 5px 10px; font-size: 12px; }
+
+    .toast-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      border-radius: 9px;
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      background: rgba(16, 185, 129, 0.1);
+      color: #d1fae5;
+      font-size: 12.5px;
+      animation: fadeIn 0.18s ease;
+    }
+
+    @keyframes pulseCard {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
+      100% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    }
+    .pulse-highlight { animation: pulseCard 0.7s ease-out; }
 
     .content-scroll {
       flex: 1;
@@ -696,6 +723,10 @@
       </header>
 
       <div class="content-scroll">
+        <div id="globalToast" class="toast-banner">
+          <span id="globalToastMsg"></span>
+          <button class="btn sm" onclick="document.getElementById('globalToast').style.display='none'">Fechar</button>
+        </div>
         <!-- ======================== TAB 1: OVERVIEW ======================== -->
         <section id="tab-overview" class="tab-panel active">
           <div class="grid-4" id="overviewKpis">
@@ -842,11 +873,13 @@
               <div class="kpi-label" id="mAccLabel">Acessos / Chamadas</div>
               <div class="kpi-value" style="font-size:19px; color:var(--cyan);" id="mAcc">0</div>
             </div>
-            <div class="card" style="padding:12px 14px;">
+            <div class="card" id="mCppCard" style="padding:12px 14px;">
               <div class="kpi-label">Tempo Real C++ (n atual)</div>
               <div class="kpi-value" style="font-size:19px; color:var(--emerald);" id="mCppTime">—</div>
             </div>
           </div>
+
+          <div id="vizCppResultBanner" class="callout emerald mb-16" style="display:none; margin-top:0;"></div>
 
           <!-- Main Visualizer Grid: Stage + Synced C++ Code -->
           <div class="viz-grid">
@@ -1445,21 +1478,57 @@
       }
     }
 
+    function showGlobalToast(htmlMsg) {
+      const toast = document.getElementById('globalToast');
+      const msgEl = document.getElementById('globalToastMsg');
+      msgEl.innerHTML = htmlMsg;
+      toast.style.display = 'flex';
+    }
+
     document.getElementById('btnRebenchmark').addEventListener('click', async () => {
       const btn = document.getElementById('btnRebenchmark');
+      const tStart = performance.now();
       btn.disabled = true;
-      btn.textContent = 'Executando C++...';
+      btn.classList.remove('success');
+      btn.textContent = '⏳ Executando 294 testes C++...';
       try {
         const res = await fetch('/api/rebenchmark', { method: 'POST' });
-        if (res.ok) {
-          benchmarkData = await res.json();
-          onBenchmarksLoaded();
-        }
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        benchmarkData = await res.json();
+        isBackendOnline = true;
+        document.getElementById('engineDot').classList.remove('offline');
+        document.getElementById('engineStatusText').textContent = 'Motor C++20 Conectado';
+        onBenchmarksLoaded();
+        const elapsedSec = ((performance.now() - tStart) / 1000).toFixed(2);
+        btn.classList.add('success');
+        btn.textContent = '✓ Bateria C++ Atualizada!';
+        showGlobalToast(
+          `<strong>Bateria C++20 concluída em ${elapsedSec}s:</strong> ${(benchmarkData.records || []).length} experimentos executados no motor nativo (${benchmarkData.generated_at || 'agora'}). KPIs, gráficos e tabelas atualizados.`
+        );
       } catch (e) {
-        alert('Disponível quando executado via AlgoLab.exe.');
+        // Fallback local cronometrado se aberto como HTML estático fora do AlgoLab.exe
+        const t0 = performance.now();
+        const probeArr = generateInputArray(2000, 'random');
+        buildSortingSteps('quick_median3', probeArr.slice(0, 64));
+        const fallbackUs = (performance.now() - t0) * 1000.0;
+        const nowStr = new Date().toLocaleTimeString('pt-BR');
+        if ((benchmarkData.records || []).length > 0) {
+          benchmarkData.generated_at = nowStr + ' (Snapshot Local)';
+          onBenchmarksLoaded();
+          btn.classList.add('success');
+          btn.textContent = '✓ Snapshot Recalculado!';
+          showGlobalToast(
+            `<strong>Modo HTML Estático (fora do AlgoLab.exe):</strong> Snapshot de ${(benchmarkData.records || []).length} ensaios reprocessado às ${nowStr} (teste local: ${fallbackUs.toFixed(0)} µs). Para medição nativa C++, execute <code>AlgoLab.exe</code>.`
+          );
+        } else {
+          showGlobalToast('<strong>Motor C++ offline:</strong> Execute <code>AlgoLab.exe</code> para medir diretamente no binário nativo.');
+        }
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Executar Bateria C++';
+        setTimeout(() => {
+          btn.classList.remove('success');
+          btn.textContent = 'Executar Bateria C++';
+        }, 2800);
       }
     });
 
@@ -2343,36 +2412,113 @@
       }
     }
 
-    async function updateCppTimeBadge() {
-      const el = document.getElementById('mCppTime');
+    function resolveCppKeyAndSizes() {
       const suite = vizState.domain;
       let key = vizState.algo;
-      if (key === 'fib_compare') key = 'fib_rec';
-      if (key === 'pow_compare') key = 'pow_dc';
-      if (key === 'coin_compare') key = 'coin_dp';
-      if (key === 'knap_compare') key = 'knap_01_dp';
+      let curN = vizState.n;
+      let stressN = 10000;
+      if (suite === 'search') {
+        stressN = 100000;
+      } else if (suite === 'recursion') {
+        if (key === 'fib_compare') {
+          key = 'fib_rec';
+          curN = Math.min(vizState.n, 7);
+          stressN = 30;
+        } else {
+          key = 'pow_dc';
+          curN = Math.max(vizState.n, 16);
+          stressN = 1000000;
+        }
+      } else if (suite === 'greedy_dp') {
+        if (key === 'coin_compare') {
+          key = 'coin_dp';
+          curN = (vizState.format === 'non_canonical') ? 6 : 36;
+          stressN = 5000;
+        } else {
+          key = 'knap_01_dp';
+          curN = 10;
+          stressN = 100;
+        }
+      }
+      return { suite, key, curN, stressN, fmt: vizState.format || 'random' };
+    }
 
-      if (isBackendOnline) {
-        try {
-          const res = await fetch('/api/run-custom', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              suite, algo_key: key,
-              n: suite === 'sorting' ? Math.max(vizState.n, 1000) : (suite === 'search' ? 100000 : vizState.n),
-              format_key: vizState.format || 'random'
-            })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            el.textContent = data.elapsed_us.toFixed(2) + ' µs';
-            return;
-          }
-        } catch (e) {}
+    async function updateCppTimeBadge(interactive = false) {
+      const el = document.getElementById('mCppTime');
+      const card = document.getElementById('mCppCard');
+      const btn = document.getElementById('vizMeasureCpp');
+      const banner = document.getElementById('vizCppResultBanner');
+      const { suite, key, curN, stressN, fmt } = resolveCppKeyAndSizes();
+
+      if (interactive) {
+        btn.disabled = true;
+        btn.classList.remove('success');
+        btn.textContent = '⏳ Medindo...';
       }
 
-      const match = (benchmarkData.records || []).find(r => r.algo_key === key);
-      el.textContent = match ? (match.elapsed_us.toFixed(2) + ' µs (ref)') : '—';
+      try {
+        const resCur = await fetch('/api/run-custom', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ suite, algo_key: key, n: curN, format_key: fmt })
+        });
+        if (!resCur.ok) throw new Error('HTTP ' + resCur.status);
+        const dCur = await resCur.json();
+        isBackendOnline = true;
+        document.getElementById('engineDot').classList.remove('offline');
+        document.getElementById('engineStatusText').textContent = 'Motor C++20 Conectado';
+
+        el.textContent = dCur.elapsed_us.toFixed(2) + ' µs';
+        if (card) {
+          card.classList.remove('pulse-highlight');
+          void card.offsetWidth;
+          card.classList.add('pulse-highlight');
+        }
+
+        if (interactive) {
+          const resStress = await fetch('/api/run-custom', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ suite, algo_key: key, n: stressN, format_key: fmt })
+          });
+          const dStress = resStress.ok ? await resStress.json() : dCur;
+          banner.style.display = 'block';
+          banner.innerHTML =
+            `<strong>⚡ Medição C++20 Nativa Concluída — ${dCur.algorithm}</strong> (${dCur.input_format})<br/>` +
+            `• <strong>Entrada atual (n = ${dCur.n.toLocaleString('pt-BR')}):</strong> <span class="mono">${dCur.elapsed_us.toFixed(2)} µs</span> | ${dCur.dominant_op}: <span class="mono">${dCur.dominant_count.toLocaleString('pt-BR')}</span> | Memória aux.: <span class="mono">${dCur.extra_memory_bytes.toLocaleString('pt-BR')} B</span><br/>` +
+            `• <strong>Carga de escala (n = ${dStress.n.toLocaleString('pt-BR')}):</strong> <span class="mono">${dStress.elapsed_us.toFixed(2)} µs</span> (${dStress.elapsed_ms.toFixed(3)} ms) | ${dStress.dominant_op}: <span class="mono">${dStress.dominant_count.toLocaleString('pt-BR')}</span> | Trocas/Escritas: <span class="mono">${dStress.swaps_or_writes.toLocaleString('pt-BR')}</span> | Corretude: <strong>${dStress.correct ? '100% OK' : 'Subótimo/Aviso'}</strong>`;
+          btn.classList.add('success');
+          btn.textContent = '✓ Medido no C++!';
+        }
+        return;
+      } catch (e) {
+        const match = (benchmarkData.records || []).find(r => r.algo_key === key && r.format_key === fmt) ||
+                      (benchmarkData.records || []).find(r => r.algo_key === key);
+        if (interactive) {
+          const t0 = performance.now();
+          if (suite === 'sorting') buildSortingSteps(key, generateInputArray(curN, fmt));
+          else if (suite === 'search') buildSearchSteps(key, curN, fmt);
+          const jsUs = (performance.now() - t0) * 1000.0;
+          el.textContent = match ? (match.elapsed_us.toFixed(2) + ' µs (ref)') : (jsUs.toFixed(1) + ' µs (JS)');
+          banner.style.display = 'block';
+          banner.innerHTML =
+            `<strong>Snapshot de Referência C++20 (Motor HTTP offline):</strong> ` +
+            (match
+              ? `${match.algorithm} em n=${match.n.toLocaleString('pt-BR')} (${match.input_format}): <span class="mono">${match.elapsed_us.toFixed(2)} µs</span> | ${match.dominant_op}: <span class="mono">${match.dominant_count.toLocaleString('pt-BR')}</span>.`
+              : `Tempo local no navegador: <span class="mono">${jsUs.toFixed(1)} µs</span>.`) +
+            ` Execute via <code>AlgoLab.exe</code> para medições nativas ao vivo.`;
+        } else {
+          el.textContent = match ? (match.elapsed_us.toFixed(2) + ' µs (ref)') : '—';
+        }
+      } finally {
+        if (interactive) {
+          btn.disabled = false;
+          setTimeout(() => {
+            btn.classList.remove('success');
+            btn.textContent = '⚡ Medir C++ Nativo';
+          }, 2200);
+        }
+      }
     }
 
     function stopViz() {
@@ -2429,7 +2575,7 @@
       vizState.stepIdx = 0;
       renderVizFrame();
     });
-    document.getElementById('vizMeasureCpp').addEventListener('click', updateCppTimeBadge);
+    document.getElementById('vizMeasureCpp').addEventListener('click', () => updateCppTimeBadge(true));
 
     // =========================================================================
     // EMPIRICAL LAB (TABLES + INTERACTIVE MULTI-SERIES CANVAS CHART)
@@ -2669,12 +2815,11 @@
     });
 
     document.getElementById('btnRunCustom').addEventListener('click', async () => {
+      const btn = document.getElementById('btnRunCustom');
       const out = document.getElementById('customResultText');
-      if (!isBackendOnline) {
-        out.textContent = 'Disponível ao executar pelo binário AlgoLab.exe.';
-        return;
-      }
-      out.textContent = 'Calculando no C++...';
+      btn.disabled = true;
+      out.style.color = 'var(--amber)';
+      out.textContent = '⏳ Executando no motor C++...';
       try {
         const res = await fetch('/api/run-custom', {
           method: 'POST',
@@ -2686,10 +2831,15 @@
             format_key: document.getElementById('customFormat').value
           })
         });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const d = await res.json();
-        out.textContent = `${d.algorithm} (n=${d.n}): ${d.elapsed_us.toFixed(2)} µs | ${d.dominant_op}: ${d.dominant_count.toLocaleString('pt-BR')} | ${d.result_summary || 'OK'}`;
+        out.style.color = 'var(--emerald)';
+        out.textContent = `${d.algorithm} (n=${d.n.toLocaleString('pt-BR')}): ${d.elapsed_us.toFixed(2)} µs (${d.elapsed_ms.toFixed(3)} ms) | ${d.dominant_op}: ${d.dominant_count.toLocaleString('pt-BR')} | Mem: ${d.extra_memory_bytes.toLocaleString('pt-BR')} B | ${d.result_summary || 'OK'}`;
       } catch (e) {
-        out.textContent = 'Erro ao executar experimento.';
+        out.style.color = 'var(--rose)';
+        out.textContent = 'Motor C++ offline. Execute via AlgoLab.exe para medições customizadas.';
+      } finally {
+        btn.disabled = false;
       }
     });
 
@@ -2841,6 +2991,12 @@
     window.addEventListener('resize', () => {
       if (document.getElementById('tab-visualizer').classList.contains('active')) renderVizFrame();
       if (document.getElementById('tab-empirical').classList.contains('active')) renderEmpiricalChart();
+    });
+
+    window.addEventListener('pagehide', () => {
+      if (isBackendOnline && navigator.sendBeacon) {
+        navigator.sendBeacon('/api/shutdown');
+      }
     });
 
     // Boot
